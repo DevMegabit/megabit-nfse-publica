@@ -575,4 +575,52 @@ class Tools extends BaseTools
     {
         return $this->gerarNfseFromString($this->gerarNfseSignedRequest($rps));
     }
+
+    public function cartaCorrecao($params)
+    {
+        $operation = "CartaCorrecaoNfseEnvio";
+
+        $content = "<CartaCorrecaoNfseEnvio xmlns=\"{$this->wsobj->msgns}\"> "
+            . "<Pedido>"
+            . "<InfPedidoCartaCorrecao id='assinar'>"
+            . "<IdentificacaoNfse>"
+            . "<Numero>$params->numero</Numero>"
+            . "<Cnpj>$params->cnpj</Cnpj>"
+            . "<CodigoMunicipio>$params->cmun</CodigoMunicipio>"
+            . "</IdentificacaoNfse>"
+            . "<TomadorServico>"
+            . "<IdentificacaoTomador>"
+            . "<CpfCnpj>"
+            . "<Cnpj>{$params->tomador->cnpj}</Cnpj>"
+            . "</CpfCnpj>"
+            . "</IdentificacaoTomador>"
+            . "<RazaoSocial>{$params->tomador->razao}</RazaoSocial>"
+            . "<Endereco>"
+            . "<Endereco>{$params->tomador->endereco}</Endereco>"
+            . "<Numero>{$params->tomador->numero}</Numero>"
+            . "<Bairro>{$params->tomador->bairro}</Bairro>"
+            . "<Cep>{$params->tomador->cep}</Cep>"
+            . "</Endereco>"
+            . "<Contato>"
+            . "<Email>{$params->tomador->email}</Email>"
+            . "</Contato>"
+            . "</TomadorServico>"
+            . "<Discriminacao>{$params->motivo}</Discriminacao>"
+            . "</InfPedidoCartaCorrecao>"
+            . "</Pedido>"
+            . "</CartaCorrecaoNfseEnvio>";
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfPedidoCartaCorrecao',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Pedido'
+        );
+
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
 }
