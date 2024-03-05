@@ -85,7 +85,7 @@ class Tools extends BaseTools
             'InfPedidoCancelamento',
             'id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'Pedido'
         );
         $content = str_replace(
@@ -113,23 +113,23 @@ class Tools extends BaseTools
         $novorps->config($this->config);
 
         $pedido = "<Pedido>"
-        . "<InfPedidoCancelamento id=\"cancel\">"
-        . "<IdentificacaoNfse>"
+            . "<InfPedidoCancelamento id=\"cancel\">"
+            . "<IdentificacaoNfse>"
             . "<Numero>" . sprintf("%015d", $numero_nfse_a_cancelar) . "</Numero>"
-        . "<Cnpj>{$this->config->cnpj}</Cnpj>"
-        . "<InscricaoMunicipal>{$this->config->im}</InscricaoMunicipal>"
-        . "<CodigoMunicipio>{$this->config->cmun}</CodigoMunicipio>"
-        . "</IdentificacaoNfse>"
-        . "<CodigoCancelamento>{$codigo}</CodigoCancelamento>"
-        . "</InfPedidoCancelamento>"
-        . "</Pedido>";
+            . "<Cnpj>{$this->config->cnpj}</Cnpj>"
+            . "<InscricaoMunicipal>{$this->config->im}</InscricaoMunicipal>"
+            . "<CodigoMunicipio>{$this->config->cmun}</CodigoMunicipio>"
+            . "</IdentificacaoNfse>"
+            . "<CodigoCancelamento>{$codigo}</CodigoCancelamento>"
+            . "</InfPedidoCancelamento>"
+            . "</Pedido>";
 
         $content = "<SubstituirNfseEnvio xmlns=\"{$this->wsobj->msgns}\">"
             . "<SubstituicaoNfse id=\"subst\">"
             . $pedido
             . $novorps->render()
-        . "</SubstituicaoNfse>"
-            ."</SubstituirNfseEnvio>";
+            . "</SubstituicaoNfse>"
+            . "</SubstituirNfseEnvio>";
 
         $content = Signer::sign(
             $this->certificate,
@@ -137,7 +137,7 @@ class Tools extends BaseTools
             'InfRps',
             'id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'Rps'
         );
         $content = Signer::sign(
@@ -146,7 +146,7 @@ class Tools extends BaseTools
             'InfPedidoCancelamento',
             'Id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'Pedido'
         );
         $content = Signer::sign(
@@ -155,7 +155,7 @@ class Tools extends BaseTools
             'SubstituicaoNfse',
             'Id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'SubstituirNfseEnvio'
         );
         $content = str_replace(
@@ -188,7 +188,7 @@ class Tools extends BaseTools
             'Prestador',
             'id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             ''
         );
 
@@ -196,7 +196,7 @@ class Tools extends BaseTools
             ['</ConsultarLoteRpsEnvio>'],
             [
                 "<Protocolo>{$protocolo}</Protocolo>"
-                . "</ConsultarLoteRpsEnvio>"
+                    . "</ConsultarLoteRpsEnvio>"
             ],
             $content
         );
@@ -225,8 +225,8 @@ class Tools extends BaseTools
         }
         if (!empty($params->data_emissao_ini) && !empty($params->data_emissao_fim)) {
             $content .= "<PeriodoEmissao>"
-            . "<DataInicial>{$params->data_emissao_ini}</DataInicial>"
-            . "<DataFinal>{$params->data_emissao_fim}</DataFinal>"
+                . "<DataInicial>{$params->data_emissao_ini}</DataInicial>"
+                . "<DataFinal>{$params->data_emissao_fim}</DataFinal>"
                 . "</PeriodoEmissao>";
         } else {
             if (!empty($params->competencia_ini) && !empty($params->competencia_fim)) {
@@ -238,26 +238,26 @@ class Tools extends BaseTools
         }
         if (!empty($params->tomador)) {
             $content .= "<Tomador>"
-            . "<CpfCnpj>";
+                . "<CpfCnpj>";
             if (!empty($params->tomador->cnpj)) {
                 $content .= "<Cnpj>{$params->tomador->cnpj}</Cnpj>";
             } else {
                 $content .= "<Cpf>{$params->tomador->cpf}</Cpf>";
             }
             $content .= "</CpfCnpj>"
-            . "<InscricaoMunicipal>{$params->tomador->im}</InscricaoMunicipal>"
+                . "<InscricaoMunicipal>{$params->tomador->im}</InscricaoMunicipal>"
                 . "</Tomador>";
         }
         if (!empty($params->intermediario)) {
             $content .= "<Intermediario>"
-            . "<CpfCnpj>";
+                . "<CpfCnpj>";
             if (!empty($params->intermediario->cnpj)) {
                 $content .= "<Cnpj>{$params->intermediario->cnpj}</Cnpj>";
             } else {
                 $content .= "<Cpf>{$params->intermediario->cpf}</Cpf>";
             }
             $content .= "</CpfCnpj>"
-            . "<InscricaoMunicipal>{$params->intermediario->im}</InscricaoMunicipal>"
+                . "<InscricaoMunicipal>{$params->intermediario->im}</InscricaoMunicipal>"
                 . "</Intermediario>";
         }
         $content .= "<Pagina>{$params->pagina}</Pagina>"
@@ -293,8 +293,8 @@ class Tools extends BaseTools
         }
         if (!empty($params->data_emissao_ini) && !empty($params->data_emissao_fim)) {
             $content .= "<PeriodoEmissao>"
-            . "<DataInicial>{$params->data_emissao_ini}</DataInicial>"
-            . "<DataFinal>{$params->data_emissao_fim}</DataFinal>"
+                . "<DataInicial>{$params->data_emissao_ini}</DataInicial>"
+                . "<DataFinal>{$params->data_emissao_fim}</DataFinal>"
                 . "</PeriodoEmissao>";
         } else {
             if (!empty($params->competencia_ini) && !empty($params->competencia_fim)) {
@@ -306,26 +306,26 @@ class Tools extends BaseTools
         }
         if (!empty($params->prestador)) {
             $content .= "<Prestador>"
-            . "<CpfCnpj>";
+                . "<CpfCnpj>";
             if (!empty($params->prestador->cnpj)) {
                 $content .= "<Cnpj>{$params->prestador->cnpj}</Cnpj>";
             } else {
                 $content .= "<Cpf>{$params->prestador->cpf}</Cpf>";
             }
-                $content .= "</CpfCnpj>"
-            . "<InscricaoMunicipal>{$params->prestador->im}</InscricaoMunicipal>"
+            $content .= "</CpfCnpj>"
+                . "<InscricaoMunicipal>{$params->prestador->im}</InscricaoMunicipal>"
                 . "</Prestador>";
         }
         if (!empty($params->intermediario)) {
             $content .= "<Intermediario>"
-            . "<CpfCnpj>";
+                . "<CpfCnpj>";
             if (!empty($params->intermediario->cnpj)) {
                 $content .= "<Cnpj>{$params->intermediario->cnpj}</Cnpj>";
             } else {
                 $content .= "<Cpf>{$params->intermediario->cpf}</Cpf>";
             }
             $content .= "</CpfCnpj>"
-            . "<InscricaoMunicipal>{$params->intermediario->im}</InscricaoMunicipal>"
+                . "<InscricaoMunicipal>{$params->intermediario->im}</InscricaoMunicipal>"
                 . "</Intermediario>";
         }
         $content .= "<Pagina>{$params->pagina}</Pagina>"
@@ -355,7 +355,7 @@ class Tools extends BaseTools
             'Prestador',
             'id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             ''
         );
 
@@ -363,13 +363,13 @@ class Tools extends BaseTools
             ['</ConsultarNfseFaixaEnvio>'],
             [
                 "<Faixa>"
-                . "<NumeroNfseInicial>" . sprintf("%04d%011d", $numero_ini, $numero_ano) . "</NumeroNfseInicial>"
-                . "<NumeroNfseFinal>" . sprintf("%04d%011d", $numero_ini, $numero_ano) . "</NumeroNfseFinal>"
-                . "</Faixa></ConsultarNfseFaixaEnvio>"
+                    . "<NumeroNfseInicial>" . sprintf("%04d%011d", $numero_ano, $numero_ini) . "</NumeroNfseInicial>"
+                    . "<NumeroNfseFinal>" . sprintf("%04d%011d", $numero_ano, $numero_fim) . "</NumeroNfseFinal>"
+                    . "</Faixa></ConsultarNfseFaixaEnvio>"
             ],
             $content
         );
-
+        // dd($content);
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
     }
@@ -385,13 +385,13 @@ class Tools extends BaseTools
     {
         $operation = "ConsultarNfsePorRps";
         $content = "<ConsultarNfseRpsEnvio xmlns=\"{$this->wsobj->msgns}\">"
-        . "<IdentificacaoRps>"
-        . "<Numero>{$numero}</Numero>"
-        . "<Serie>{$serie}</Serie>"
-        . "<Tipo>{$tipo}</Tipo>"
-        . "</IdentificacaoRps>"
-        . $this->prestador
-        . "</ConsultarNfseRpsEnvio>";
+            . "<IdentificacaoRps>"
+            . "<Numero>{$numero}</Numero>"
+            . "<Serie>{$serie}</Serie>"
+            . "<Tipo>{$tipo}</Tipo>"
+            . "</IdentificacaoRps>"
+            . $this->prestador
+            . "</ConsultarNfseRpsEnvio>";
 
         $content = Signer::sign(
             $this->certificate,
@@ -399,7 +399,7 @@ class Tools extends BaseTools
             'Prestador',
             'id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             ''
         );
 
@@ -445,7 +445,7 @@ class Tools extends BaseTools
             'InfDeclaracaoPrestacaoServico',
             'Id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'Rps'
         );
         $content = Signer::sign(
@@ -454,7 +454,7 @@ class Tools extends BaseTools
             'LoteRps',
             'Id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'EnviarLoteRpsSincronoEnvio'
         );
         $content = str_replace(
@@ -504,7 +504,7 @@ class Tools extends BaseTools
             'InfRps',
             'id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'Rps'
         );
         $content = Signer::sign(
@@ -513,7 +513,7 @@ class Tools extends BaseTools
             'LoteRps',
             'Id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'EnviarLoteRpsEnvio'
         );
         $content = str_replace(
@@ -541,7 +541,7 @@ class Tools extends BaseTools
             'InfRps',
             'id',
             OPENSSL_ALGO_SHA1,
-            [true,false,null,null],
+            [true, false, null, null],
             'Rps'
         );
         $content = str_replace(
@@ -549,7 +549,7 @@ class Tools extends BaseTools
             '',
             $content
         );
-        
+
         return $content;
     }
 
@@ -565,7 +565,7 @@ class Tools extends BaseTools
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
     }
-    
+
     /**
      * Solicita a emissão de uma NFSe de forma SINCRONA
      * @param RpsInterface $rps
