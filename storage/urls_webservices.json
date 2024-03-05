@@ -1,0 +1,92 @@
+{
+    "4200101": {
+        "municipio": "Abelardo Luz",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/abelardoluz_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/abelardoluz_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4200754": {
+        "municipio": "Alto Bela Vista",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/agronomica_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/agronomica_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4101002": {
+        "municipio": "Ampere",
+        "uf": "PR",
+        "homologacao": "http://nfse-teste.publica.inf.br/ampere_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/ampere_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4203006": {
+        "municipio": "Caçador",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/cacador_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/cacador_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4203808": {
+        "municipio": "Canoinhas",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/canoinhas_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/canoinhas_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4204202": {
+        "municipio": "Chapecó",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/homologa_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/chapeco_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4208203": {
+        "municipio": "Itajai",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/itajai_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/itajai_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4209706": {
+        "municipio": "Lebon Regis",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/lebonregis_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/lebonregis_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4210100": {
+        "municipio": "Mafra",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/mafra_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/mafra_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    },
+    "4218251": {
+        "municipio": "Timbo Grande",
+        "uf": "SC",
+        "homologacao": "http://nfse-teste.publica.inf.br/timbogrande_nfse_integracao/Services",
+        "producao": "http://nfse1.publica.inf.br/timbogrande_nfse_integracao/Services",
+        "version": "1.00",
+        "msgns": "http://www.publica.inf.br",
+        "soapns": "http://service.nfse.integracao.ws.publica/"
+    }
+}
