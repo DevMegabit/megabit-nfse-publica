@@ -23,6 +23,9 @@ use NFePHP\NFSePublica\Common\Signer;
 use NFePHP\NFSePublica\Common\Soap\SoapInterface;
 use NFePHP\NFSePublica\Common\Soap\SoapCurl;
 
+/**
+ * Classe Tools
+ */
 class Tools
 {
     public $lastRequest;
