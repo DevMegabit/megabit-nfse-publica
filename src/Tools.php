@@ -507,15 +507,15 @@ class Tools extends BaseTools
             [true, false, null, null],
             'Rps'
         );
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'LoteRps',
-            'Id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'EnviarLoteRpsEnvio'
-        );
+        // $content = Signer::sign(
+        //     $this->certificate,
+        //     $content,
+        //     'LoteRps',
+        //     'Id',
+        //     OPENSSL_ALGO_SHA1,
+        //     [true, false, null, null],
+        //     'EnviarLoteRpsEnvio'
+        // );
         $content = str_replace(
             ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
             '',
@@ -576,6 +576,9 @@ class Tools extends BaseTools
         return $this->gerarNfseFromString($this->gerarNfseSignedRequest($rps));
     }
 
+    /**
+     * Enviar Carta de Correção
+     */
     public function cartaCorrecao($params)
     {
         $operation = "CartaCorrecaoNfseEnvio";
