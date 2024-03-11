@@ -51,7 +51,7 @@ class Tools extends BaseTools
      * @param integer $numero_ano
      * @return string
      */
-    public function cancelarNfse($numero, $codigo = self::CANCEL_ERRO_EMISSAO, $id = null, $numero_ano = null)
+    public function cancelarNfse($numero, $codigo, $id = null, string $motivoCancelamento, $numero_ano = null)
     {
         if (empty($id)) {
             $id = $numero;
@@ -74,6 +74,7 @@ class Tools extends BaseTools
             . "<CodigoMunicipio>{$this->config->cmun}</CodigoMunicipio>"
             . "</IdentificacaoNfse>"
             . "<CodigoCancelamento>$codigo</CodigoCancelamento>"
+            . "<MotivoCancelamento>$motivoCancelamento</MotivoCancelamento>"
             . "</InfPedidoCancelamento>"
             . "</Pedido>";
         $content = "<CancelarNfseEnvio xmlns=\"{$this->wsobj->msgns}\">"
