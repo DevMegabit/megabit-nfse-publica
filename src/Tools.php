@@ -182,6 +182,8 @@ class Tools extends BaseTools
             . $this->prestador
             . "</ConsultarLoteRpsEnvio>";
 
+        $content = str_replace("<CpfCnpj>", "", $content);
+        $content = str_replace("</CpfCnpj>", "", $content);
         $content = Signer::sign(
             $this->certificate,
             $content,
@@ -200,7 +202,6 @@ class Tools extends BaseTools
             ],
             $content
         );
-
 
         Validator::isValid($content, $this->xsdpath);
 
@@ -369,7 +370,6 @@ class Tools extends BaseTools
             ],
             $content
         );
-        // dd($content);
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
     }
@@ -448,15 +448,15 @@ class Tools extends BaseTools
             [true, false, null, null],
             'Rps'
         );
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'LoteRps',
-            'Id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'EnviarLoteRpsSincronoEnvio'
-        );
+        // $content = Signer::sign(
+        //     $this->certificate,
+        //     $content,
+        //     'LoteRps',
+        //     'Id',
+        //     OPENSSL_ALGO_SHA1,
+        //     [true, false, null, null],
+        //     'EnviarLoteRpsSincronoEnvio'
+        // );
         $content = str_replace(
             ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
             '',
@@ -507,15 +507,15 @@ class Tools extends BaseTools
             [true, false, null, null],
             'Rps'
         );
-        // $content = Signer::sign(
-        //     $this->certificate,
-        //     $content,
-        //     'LoteRps',
-        //     'Id',
-        //     OPENSSL_ALGO_SHA1,
-        //     [true, false, null, null],
-        //     'EnviarLoteRpsEnvio'
-        // );
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'LoteRps',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'EnviarLoteRpsEnvio'
+        );
         $content = str_replace(
             ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
             '',
