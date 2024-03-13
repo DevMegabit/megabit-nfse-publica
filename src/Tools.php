@@ -627,4 +627,40 @@ class Tools extends BaseTools
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
     }
+
+    /**
+     * ConsultarSituacaoLoteRpsEnvio
+     */
+    public function consultarSituacaoLoteRps($params)
+    {
+        $operation = "ConsultarSituacaoLoteRps";
+
+        $content = "<ConsultarSituacaoLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\"> "
+            . "<Prestador id='assinar'>"
+            . "<Cnpj>$params->cnpj</Cnpj>"
+            . "<InscricaoMunicipal>$params->im</InscricaoMunicipal>"
+            . "</Prestador>"
+            . "</ConsultarSituacaoLoteRpsEnvio>";
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'Prestador',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+        );
+
+        $content = str_replace(
+            ['</ConsultarSituacaoLoteRpsEnvio>'],
+            [
+                "<Protocolo>{$params->protocolo}</Protocolo>"
+                    . "</ConsultarSituacaoLoteRpsEnvio>"
+            ],
+            $content
+        );
+
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
 }
