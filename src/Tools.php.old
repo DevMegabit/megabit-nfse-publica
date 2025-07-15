@@ -28,21 +28,19 @@ class Tools extends BaseTools
     const CANCEL_DUPLICIDADE = 4;
 
     protected $xsdpath;
-    protected $schema;
 
     /**
      * Constructor
      * @param string $config
      * @param Certificate $cert
      */
-    public function __construct($config, Certificate $cert, $versionSchema = 'v03')
+    public function __construct($config, Certificate $cert)
     {
         parent::__construct($config, $cert);
         $path = realpath(
             __DIR__ . '/../storage/schemes'
         );
-        $this->schema =  "schema_nfse_$versionSchema.xsd";
-        $this->xsdpath = $path . "/" . $this->schema;
+        $this->xsdpath = $path . '/schema_nfse_v03.xsd';
     }
 
     /**
@@ -490,7 +488,7 @@ class Tools extends BaseTools
         }
         $contentmsg = "<EnviarLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\" "
             . "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-            . "xsi:schemaLocation=\"{$this->wsobj->msgns} {$this->schema}\">"
+            . "xsi:schemaLocation=\"http://www.publica.inf.br schema_nfse_v03.xsd\">"
             . "<LoteRps versao=\"{$this->wsobj->version}\">"
             . "<NumeroLote>$lote</NumeroLote>"
             . "<Cnpj>{$this->config->cnpj}</Cnpj>"
