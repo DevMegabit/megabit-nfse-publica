@@ -1,9 +1,9 @@
 <?php
 
-namespace NFePHP\NFSePublica\Common;
+namespace NFePHP\NFSePublica;
 
 /**
- * Auxiar Tools Class for comunications with NFSe webserver in Nacional Standard
+ * Class for comunications with NFSe webserver in Nacional Standard
  *
  * @category  NFePHP
  * @package   NFePHP\NFSePublica
@@ -15,209 +15,654 @@ namespace NFePHP\NFSePublica\Common;
  * @link      http://github.com/nfephp-org/sped-nfse-publica for the canonical source repository
  */
 
-use NFePHP\Common\Certificate;
-use NFePHP\Common\Strings;
-use NFePHP\Common\DOMImproved as Dom;
+use NFePHP\NFSePublica\Common\Tools as BaseTools;
 use NFePHP\NFSePublica\RpsInterface;
+use NFePHP\Common\Certificate;
+use NFePHP\Common\Validator;
 use NFePHP\NFSePublica\Common\Signer;
-use NFePHP\NFSePublica\Common\Soap\SoapInterface;
-use NFePHP\NFSePublica\Common\Soap\SoapCurl;
 
-/**
- * Classe Tools
- */
-class Tools
+class Tools extends BaseTools
 {
-    public $lastRequest;
+    const CANCEL_ERRO_EMISSAO = 1;
+    const CANCEL_SERVICO_NAO_CONCLUIDO = 2;
+    const CANCEL_DUPLICIDADE = 4;
 
-    protected $config;
-    protected $prestador;
-    protected $certificate;
-    protected $wsobj;
-    protected $soap;
-    protected $environment;
+    protected $xsdpath;
+    protected $schema;
 
     /**
      * Constructor
      * @param string $config
      * @param Certificate $cert
      */
-    public function __construct($config, Certificate $cert)
+    public function __construct($config, Certificate $cert, $versionSchema = 'v03')
     {
-        $this->config = json_decode($config);
-        $this->certificate = $cert;
-        $this->wsobj = $this->loadWsobj($this->config->cmun);
-        $this->environment = 'homologacao';
-        if ($this->config->tpamb === 1) {
-            $this->environment = 'producao';
-        }
-        $this->buildPrestadorTag();
+        parent::__construct($config, $cert);
+        $path = realpath(
+            __DIR__ . '/../storage/schemes'
+        );
+        $this->schema =  "schema_nfse_$versionSchema.xsd";
+        $this->xsdpath = $path . "/" . $this->schema;
     }
 
     /**
-     * Build tag Prestador
+     * Solicita o cancelamento de NFSe (SINCRONO)
+     * @param integer $numero
+     * @param integer $codigo
+     * @param string $id
+     * @param integer $numero_ano
+     * @return string
      */
-    protected function buildPrestadorTag()
+    public function cancelarNfse($numero, $codigo, $id = null, string $motivoCancelamento, $numero_ano = null)
     {
-        $this->prestador = "<Prestador id=\"prestador\">"
-            . "<CpfCnpj>";
+        if (empty($id)) {
+            $id = $numero;
+        }
+
+        if (empty($numero_ano)) {
+            $numero_ano = date("Y");
+        }
+        $operation = 'CancelarNfse';
+        $pedido = "<Pedido>"
+            . "<InfPedidoCancelamento id=\"$id\">"
+            . "<IdentificacaoNfse>"
+            . "<Numero>" . sprintf("%04d%011d", $numero_ano, $numero) . "</Numero>";
         if (!empty($this->config->cnpj)) {
-            $this->prestador .= "<Cnpj>{$this->config->cnpj}</Cnpj>";
+            $pedido .= "<Cnpj>{$this->config->cnpj}</Cnpj>";
         } else {
-            $this->prestador .= "<Cpf>{$this->config->cpf}</Cpf>";
+            $pedido .= "<Cpf>{$this->config->cpf}</Cpf>";
         }
-        $this->prestador .= "</CpfCnpj>"
-            . "<InscricaoMunicipal>{$this->config->im}</InscricaoMunicipal>"
-            . "</Prestador>";
-    }
-
-    /**
-     * load webservice parameters
-     * @param string $cmun
-     * @return object
-     * @throws \Exception
-     */
-    protected function loadWsobj($cmun)
-    {
-        $path = realpath(__DIR__ . "/../../storage/urls_webservices.json");
-        $urls = json_decode(file_get_contents($path), true);
-        if (empty($urls[$cmun])) {
-            throw new \Exception("Não localizado parâmetros para esse municipio.");
-        }
-        return (object) $urls[$cmun];
-    }
-
-
-    /**
-     * SOAP communication dependency injection
-     * @param SoapInterface $soap
-     */
-    public function loadSoapClass(SoapInterface $soap)
-    {
-        $this->soap = $soap;
-    }
-
-
-    /**
-     * Sign XML passing in content
-     * @param string $content
-     * @param string $tagname
-     * @param string $mark
-     * @return string XML signed
-     */
-    public function sign($content, $tagname, $mark)
-    {
-        $xml = Signer::sign(
+        $pedido .= "<InscricaoMunicipal>{$this->config->im}</InscricaoMunicipal>"
+            . "<CodigoMunicipio>{$this->config->cmun}</CodigoMunicipio>"
+            . "</IdentificacaoNfse>"
+            . "<CodigoCancelamento>$codigo</CodigoCancelamento>"
+            . "<MotivoCancelamento>$motivoCancelamento</MotivoCancelamento>"
+            . "</InfPedidoCancelamento>"
+            . "</Pedido>";
+        $content = "<CancelarNfseEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . $pedido
+            . "</CancelarNfseEnvio>";
+        $content = Signer::sign(
             $this->certificate,
             $content,
-            $tagname,
-            $mark
+            'InfPedidoCancelamento',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Pedido'
         );
-        return $xml;
-    }
-
-    /**
-     * Send message to webservice
-     * @param string $message
-     * @param string $operation
-     * @return string XML response from webservice
-     */
-    public function send($message, $operation)
-    {
-        $action = $operation;
-        $url = $this->wsobj->homologacao;
-        if ($this->environment === 'producao') {
-            $url = $this->wsobj->producao;
-        }
-        if (empty($url)) {
-            throw new \Exception("Não está registrada a URL para o ambiente "
-                . "de {$this->environment} desse municipio.");
-        }
-        $request = $this->createSoapRequest($message, $operation);
-        $this->lastRequest = $request;
-
-        if (empty($this->soap)) {
-            $this->soap = new SoapCurl($this->certificate);
-        }
-        $msgSize = strlen($request);
-        $parameters = [
-            "Content-Type: text/xml;charset=UTF-8",
-            "SOAPAction: \"$action\"",
-            "Content-length: $msgSize"
-        ];
-        $response = (string) $this->soap->send(
-            $operation,
-            $url,
-            $action,
-            $request,
-            $parameters
+        $content = str_replace(
+            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
+            '',
+            $content
         );
-        return $this->extractContentFromResponse($response, $operation);
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
     }
 
     /**
-     * Extract xml response from CDATA outputXML tag
-     * @param string $response Return from webservice
-     * @return string XML extracted from response
+     * Cancelamento com substituição por novo RPS
+     * @param integer $numero_nfse_a_cancelar
+     * @param integer $codigo 1-erro emissão 2-serviço não prestado 4-emissão em duplicidade
+     * @param RpsInterface $novorps
+     * @return string
      */
-    protected function extractContentFromResponse($response, $operation)
+    public function substituirNfse(
+        $numero_nfse_a_cancelar,
+        RpsInterface $novorps,
+        $codigo = self::CANCEL_ERRO_EMISSAO
+    ) {
+        $operation = "SubstituirNfse";
+        $novorps->config($this->config);
+
+        $pedido = "<Pedido>"
+            . "<InfPedidoCancelamento id=\"cancel\">"
+            . "<IdentificacaoNfse>"
+            . "<Numero>" . sprintf("%015d", $numero_nfse_a_cancelar) . "</Numero>"
+            . "<Cnpj>{$this->config->cnpj}</Cnpj>"
+            . "<InscricaoMunicipal>{$this->config->im}</InscricaoMunicipal>"
+            . "<CodigoMunicipio>{$this->config->cmun}</CodigoMunicipio>"
+            . "</IdentificacaoNfse>"
+            . "<CodigoCancelamento>{$codigo}</CodigoCancelamento>"
+            . "</InfPedidoCancelamento>"
+            . "</Pedido>";
+
+        $content = "<SubstituirNfseEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . "<SubstituicaoNfse id=\"subst\">"
+            . $pedido
+            . $novorps->render()
+            . "</SubstituicaoNfse>"
+            . "</SubstituirNfseEnvio>";
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfRps',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Rps'
+        );
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfPedidoCancelamento',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Pedido'
+        );
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'SubstituicaoNfse',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'SubstituirNfseEnvio'
+        );
+        $content = str_replace(
+            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
+            '',
+            $content
+        );
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
+
+    /**
+     * Consulta Lote RPS (SINCRONO) após envio com recepcionarLoteRps() (ASSINCRONO)
+     * complemento do processo de envio assincono.
+     * Que deve ser usado quando temos mais de um RPS sendo enviado
+     * por vez.
+     * @param string $protocolo
+     * @return string
+     */
+    public function consultarLoteRps($protocolo)
     {
-        $dom = new \DOMDocument();
-        $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = false;
-        $dom->loadXML($response);
-        if (!empty($dom->getElementsByTagName('return')->item(0))) {
-            $node = $dom->getElementsByTagName('return')->item(0);
-            $text = str_replace("ISO-8859-1", "UTF-8", $node->textContent);
-            return Strings::normalize($text);
+        $operation = 'ConsultarLoteRps';
+        $content = "<ConsultarLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . $this->prestador
+            . "</ConsultarLoteRpsEnvio>";
+
+        $content = str_replace("<CpfCnpj>", "", $content);
+        $content = str_replace("</CpfCnpj>", "", $content);
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'Prestador',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            ''
+        );
+
+        $content = str_replace(
+            ['</ConsultarLoteRpsEnvio>'],
+            [
+                "<Protocolo>{$protocolo}</Protocolo>"
+                    . "</ConsultarLoteRpsEnvio>"
+            ],
+            $content
+        );
+
+        Validator::isValid($content, $this->xsdpath);
+
+        return $this->send($content, $operation);
+    }
+
+    /**
+     * Consulta NFSe emitidas por serviços prestados
+     * @param \stdClass $params
+     * @return string
+     */
+    public function consultarNfsePrestado($params)
+    {
+        $operation = 'ConsultarNfseServicoPrestado';
+        if (empty($params->pagina)) {
+            $params->pagina = 1;
         }
-        return $response;
+        $content = "<ConsultarNfseServicoPrestadoEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . $this->prestador;
+        if (!empty($params->numero)) {
+            $content .= "<NumeroNfse>{$params->numero}</NumeroNfse>";
+        }
+        if (!empty($params->data_emissao_ini) && !empty($params->data_emissao_fim)) {
+            $content .= "<PeriodoEmissao>"
+                . "<DataInicial>{$params->data_emissao_ini}</DataInicial>"
+                . "<DataFinal>{$params->data_emissao_fim}</DataFinal>"
+                . "</PeriodoEmissao>";
+        } else {
+            if (!empty($params->competencia_ini) && !empty($params->competencia_fim)) {
+                $content .= "<PeriodoCompetencia>"
+                    . "<DataInicial>{$params->competencia_ini}</DataInicial>"
+                    . "<DataFinal>{$params->competencia_fim}</DataFinal>"
+                    . "</PeriodoCompetencia>";
+            }
+        }
+        if (!empty($params->tomador)) {
+            $content .= "<Tomador>"
+                . "<CpfCnpj>";
+            if (!empty($params->tomador->cnpj)) {
+                $content .= "<Cnpj>{$params->tomador->cnpj}</Cnpj>";
+            } else {
+                $content .= "<Cpf>{$params->tomador->cpf}</Cpf>";
+            }
+            $content .= "</CpfCnpj>"
+                . "<InscricaoMunicipal>{$params->tomador->im}</InscricaoMunicipal>"
+                . "</Tomador>";
+        }
+        if (!empty($params->intermediario)) {
+            $content .= "<Intermediario>"
+                . "<CpfCnpj>";
+            if (!empty($params->intermediario->cnpj)) {
+                $content .= "<Cnpj>{$params->intermediario->cnpj}</Cnpj>";
+            } else {
+                $content .= "<Cpf>{$params->intermediario->cpf}</Cpf>";
+            }
+            $content .= "</CpfCnpj>"
+                . "<InscricaoMunicipal>{$params->intermediario->im}</InscricaoMunicipal>"
+                . "</Intermediario>";
+        }
+        $content .= "<Pagina>{$params->pagina}</Pagina>"
+            . "</ConsultarNfseServicoPrestadoEnvio>";
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
     }
 
     /**
-     * Build SOAP request
-     * @param string $message
-     * @param string $operation
-     * @return string XML SOAP request
+     * Consulta dos serviços tomados
+     * @param \stdClass $params
+     * @return string
      */
-    protected function createSoapRequest($message, $operation)
+    public function consultarNfseTomado($params)
     {
+        $operation = 'ConsultarNfseServicoTomado';
+        if (empty($params->pagina)) {
+            $params->pagina = 1;
+        }
+        $content  = "<ConsultarNfseServicoTomadoEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . "<Consulente>"
+            . "<CpfCnpj>";
+        if (!empty($this->config->cnpj)) {
+            $content .= "<Cnpj>{$this->config->cnpj}</Cnpj>";
+        } else {
+            $content .= "<Cpf>{$this->config->cpf}</Cpf>";
+        }
+        $content .= "</CpfCnpj>"
+            . "<InscricaoMunicipal>{$this->config->im}</InscricaoMunicipal>"
+            . "</Consulente>";
+        if (!empty($params->numero)) {
+            $content .= "<NumeroNfse>{$params->numero}</NumeroNfse>";
+        }
+        if (!empty($params->data_emissao_ini) && !empty($params->data_emissao_fim)) {
+            $content .= "<PeriodoEmissao>"
+                . "<DataInicial>{$params->data_emissao_ini}</DataInicial>"
+                . "<DataFinal>{$params->data_emissao_fim}</DataFinal>"
+                . "</PeriodoEmissao>";
+        } else {
+            if (!empty($params->competencia_ini) && !empty($params->competencia_fim)) {
+                $content .= "<PeriodoCompetencia>"
+                    . "<DataInicial>{$params->competencia_ini}</DataInicial>"
+                    . "<DataFinal>{$params->competencia_fim}</DataFinal>"
+                    . "</PeriodoCompetencia>";
+            }
+        }
+        if (!empty($params->prestador)) {
+            $content .= "<Prestador>"
+                . "<CpfCnpj>";
+            if (!empty($params->prestador->cnpj)) {
+                $content .= "<Cnpj>{$params->prestador->cnpj}</Cnpj>";
+            } else {
+                $content .= "<Cpf>{$params->prestador->cpf}</Cpf>";
+            }
+            $content .= "</CpfCnpj>"
+                . "<InscricaoMunicipal>{$params->prestador->im}</InscricaoMunicipal>"
+                . "</Prestador>";
+        }
+        if (!empty($params->intermediario)) {
+            $content .= "<Intermediario>"
+                . "<CpfCnpj>";
+            if (!empty($params->intermediario->cnpj)) {
+                $content .= "<Cnpj>{$params->intermediario->cnpj}</Cnpj>";
+            } else {
+                $content .= "<Cpf>{$params->intermediario->cpf}</Cpf>";
+            }
+            $content .= "</CpfCnpj>"
+                . "<InscricaoMunicipal>{$params->intermediario->im}</InscricaoMunicipal>"
+                . "</Intermediario>";
+        }
+        $content .= "<Pagina>{$params->pagina}</Pagina>"
+            . "</ConsultarNfseServicoTomadoEnvio>";
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
 
-        // $header = "<cabecalho versao=\"{$this->wsobj->version}\" xmlns=\"{$this->wsobj->soapns}\">"
-        //    . "<versaoDados>{$this->wsobj->version}</versaoDados>"
-        //    . "</cabecalho>";
+    /**
+     * Consulta NFSe emitidas por faixa de numeros (SINCRONO)
+     * @param integer $numero_ini
+     * @param integer $numero_fim
+     * @param integer $numero_ano
+     * @return string
+     */
+    public function consultarNfseFaixa($numero_ini, $numero_fim, $numero_ano)
+    {
+        $operation = 'ConsultarNfseFaixa';
 
-        $cdata = htmlspecialchars($message, ENT_NOQUOTES);
-        // $cheader = htmlspecialchars($header, ENT_NOQUOTES);
+        $content = "<ConsultarNfseFaixaEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . $this->prestador
+            . "</ConsultarNfseFaixaEnvio>";
 
-        $env = "<soapenv:Envelope "
-            . "xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" "
-            . "xmlns:e=\"{$this->wsobj->soapns}\">"
-            // . "<soapenv:Header/>"
-            . "<soapenv:Body>"
-            . "<e:{$operation}>"
-            // . "<nfseCabecMsg>{$cheader}</nfseCabecMsg>"
-            . "<XML>{$cdata}</XML>"
-            . "</e:{$operation}>"
-            . "</soapenv:Body>"
-            . "</soapenv:Envelope>";
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'Prestador',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            ''
+        );
 
-        /*
-        $dom = new Dom('1.0', 'UTF-8');
-        $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = false;
-        $dom->loadXML($env);
+        $content = str_replace(
+            ['</ConsultarNfseFaixaEnvio>'],
+            [
+                "<Faixa>"
+                    . "<NumeroNfseInicial>" . sprintf("%04d%011d", $numero_ano, $numero_ini) . "</NumeroNfseInicial>"
+                    . "<NumeroNfseFinal>" . sprintf("%04d%011d", $numero_ano, $numero_fim) . "</NumeroNfseFinal>"
+                    . "</Faixa></ConsultarNfseFaixaEnvio>"
+            ],
+            $content
+        );
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
 
-        $node = $dom->getElementsByTagName('nfseCabecMsg')->item(0);
-        $cdata = $dom->createCDATASection($cabecalho);
-        $node->appendChild($cdata);
+    /**
+     * Consulta NFSe por RPS (SINCRONO)
+     * @param integer $numero
+     * @param string $serie
+     * @param integer $tipo
+     * @return string
+     */
+    public function consultarNfseRps($numero, $serie, $tipo)
+    {
+        $operation = "ConsultarNfsePorRps";
+        $content = "<ConsultarNfseRpsEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . "<IdentificacaoRps>"
+            . "<Numero>{$numero}</Numero>"
+            . "<Serie>{$serie}</Serie>"
+            . "<Tipo>{$tipo}</Tipo>"
+            . "</IdentificacaoRps>"
+            . $this->prestador
+            . "</ConsultarNfseRpsEnvio>";
 
-        $node = $dom->getElementsByTagName('nfseDadosMsg')->item(0);
-        $cdata = $dom->createCDATASection($message);
-        $node->appendChild($cdata);
-        return $dom->saveXML($dom->documentElement);
-         *
-         */
-        return $env;
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'Prestador',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            ''
+        );
+
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
+
+    /**
+     * Envia LOTE de RPS para emissão de NFSe (SINCRONO)
+     * @param array $arps Array contendo de 1 a 2 RPS::class
+     * @param string $lote Número do lote de envio
+     * @return string
+     * @throws \Exception
+     */
+    public function recepcionarRps($arps, $lote)
+    {
+        $operation = 'RecepcionarLoteRpsSincrono';
+        $no_of_rps_in_lot = count($arps);
+        if ($no_of_rps_in_lot > 2) {
+            throw new \Exception('O limite é de 2 RPS por lote enviado em modo sincrono.');
+        }
+        $content = '';
+        foreach ($arps as $rps) {
+            $rps->config($this->config);
+            $content .= $rps->render();
+        }
+        $contentmsg = "<EnviarLoteRpsSincronoEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . "<LoteRps Id=\"lote{$lote}\" versao=\"{$this->wsobj->version}\">"
+            . "<NumeroLote>$lote</NumeroLote>"
+            . "<CpfCnpj>"
+            . "<Cnpj>{$this->config->cnpj}</Cnpj>"
+            . "</CpfCnpj>"
+            . "<InscricaoMunicipal>" . $this->config->im . "</InscricaoMunicipal>"
+            . "<QuantidadeRps>$no_of_rps_in_lot</QuantidadeRps>"
+            . "<ListaRps>"
+            . $content
+            . "</ListaRps>"
+            . "</LoteRps>"
+            . "</EnviarLoteRpsSincronoEnvio>";
+        $content = Signer::sign(
+            $this->certificate,
+            $contentmsg,
+            'InfDeclaracaoPrestacaoServico',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Rps'
+        );
+        // $content = Signer::sign(
+        //     $this->certificate,
+        //     $content,
+        //     'LoteRps',
+        //     'Id',
+        //     OPENSSL_ALGO_SHA1,
+        //     [true, false, null, null],
+        //     'EnviarLoteRpsSincronoEnvio'
+        // );
+        $content = str_replace(
+            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
+            '',
+            $content
+        );
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
+
+    /**
+     * Envia LOTE de RPS para emissão de NFSe (ASSINCRONO)
+     * @param array $arps Array contendo de 1 a 2 RPS::class
+     * @param string $lote Número do lote de envio
+     * @return string
+     * @throws \Exception
+     */
+    public function recepcionarLoteRps($arps, $lote)
+    {
+        $operation = 'RecepcionarLoteRps';
+        $no_of_rps_in_lot = count($arps);
+        if ($no_of_rps_in_lot > 50) {
+            throw new \Exception('O limite é de 50 RPS por lote enviado em modo sincrono.');
+        }
+        $content = '';
+        foreach ($arps as $rps) {
+            $rps->config($this->config);
+            $content .= $rps->render();
+        }
+        $contentmsg = "<EnviarLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\" "
+            . "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
+            . "xsi:schemaLocation=\"{$this->wsobj->msgns} {$this->schema}\">"
+            . "<LoteRps versao=\"{$this->wsobj->version}\">"
+            . "<NumeroLote>$lote</NumeroLote>"
+            . "<Cnpj>{$this->config->cnpj}</Cnpj>"
+            . "<InscricaoMunicipal>" . $this->config->im . "</InscricaoMunicipal>"
+            . "<QuantidadeRps>$no_of_rps_in_lot</QuantidadeRps>"
+            . "<ListaRps>"
+            . $content
+            . "</ListaRps>"
+            . "</LoteRps>"
+            . "</EnviarLoteRpsEnvio>";
+        $content = Signer::sign(
+            $this->certificate,
+            $contentmsg,
+            'InfRps',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Rps'
+        );
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'LoteRps',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'EnviarLoteRpsEnvio'
+        );
+        $content = str_replace(
+            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
+            '',
+            $content
+        );
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
+
+    /**
+     * Assina RPS e retorna a string da requisição renderizada com a assinatura
+     * @param RpsInterface $rps
+     */
+    public function gerarNfseSignedRequest(RpsInterface $rps)
+    {
+        $rps->config($this->config);
+        $content = "<GerarNfseEnvio xmlns=\"{$this->wsobj->msgns}\">"
+            . $rps->render()
+            . "</GerarNfseEnvio>";
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfRps',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Rps'
+        );
+        $content = str_replace(
+            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
+            '',
+            $content
+        );
+
+        return $content;
+    }
+
+    /**
+     * Solicita a emissão de uma NFSe a partir de uma string
+     * com a requisição 'gerarNfse' assinado de forma SINCRONA
+     * @param string $content
+     * @return string
+     */
+    public function gerarNfseFromString(string $content)
+    {
+        $operation = "GerarNfse";
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
+
+    /**
+     * Solicita a emissão de uma NFSe de forma SINCRONA
+     * @param RpsInterface $rps
+     * @return string
+     */
+    public function gerarNfse(RpsInterface $rps)
+    {
+        return $this->gerarNfseFromString($this->gerarNfseSignedRequest($rps));
+    }
+
+    /**
+     * Enviar Carta de Correção
+     */
+    public function cartaCorrecao($params)
+    {
+        $operation = "CartaCorrecaoNfseEnvio";
+
+        $content = "<CartaCorrecaoNfseEnvio xmlns=\"{$this->wsobj->msgns}\"> "
+            . "<Pedido>"
+            . "<InfPedidoCartaCorrecao id='assinar'>"
+            . "<IdentificacaoNfse>"
+            . "<Numero>$params->numero</Numero>"
+            . "<Cnpj>$params->cnpj</Cnpj>"
+            . "<CodigoMunicipio>$params->cmun</CodigoMunicipio>"
+            . "</IdentificacaoNfse>"
+            . "<TomadorServico>"
+            . "<IdentificacaoTomador>"
+            . "<CpfCnpj>"
+            . "<Cnpj>{$params->tomador->cnpj}</Cnpj>"
+            . "</CpfCnpj>"
+            . "</IdentificacaoTomador>"
+            . "<RazaoSocial>{$params->tomador->razao}</RazaoSocial>"
+            . "<Endereco>"
+            . "<Endereco>{$params->tomador->endereco}</Endereco>"
+            . "<Numero>{$params->tomador->numero}</Numero>"
+            . "<Bairro>{$params->tomador->bairro}</Bairro>"
+            . "<Cep>{$params->tomador->cep}</Cep>"
+            . "</Endereco>"
+            . "<Contato>"
+            . "<Email>{$params->tomador->email}</Email>"
+            . "</Contato>"
+            . "</TomadorServico>"
+            . "<Discriminacao>{$params->motivo}</Discriminacao>"
+            . "</InfPedidoCartaCorrecao>"
+            . "</Pedido>"
+            . "</CartaCorrecaoNfseEnvio>";
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfPedidoCartaCorrecao',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Pedido'
+        );
+
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
+    }
+
+    /**
+     * ConsultarSituacaoLoteRpsEnvio
+     */
+    public function consultarSituacaoLoteRps($params)
+    {
+        $operation = "ConsultarSituacaoLoteRps";
+
+        $content = "<ConsultarSituacaoLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\"> "
+            . "<Prestador id='assinar'>"
+            . "<Cnpj>$params->cnpj</Cnpj>"
+            . "<InscricaoMunicipal>$params->im</InscricaoMunicipal>"
+            . "</Prestador>"
+            . "</ConsultarSituacaoLoteRpsEnvio>";
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'Prestador',
+            'id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+        );
+
+        $content = str_replace(
+            ['</ConsultarSituacaoLoteRpsEnvio>'],
+            [
+                "<Protocolo>{$params->protocolo}</Protocolo>"
+                    . "</ConsultarSituacaoLoteRpsEnvio>"
+            ],
+            $content
+        );
+
+        Validator::isValid($content, $this->xsdpath);
+        return $this->send($content, $operation);
     }
 }

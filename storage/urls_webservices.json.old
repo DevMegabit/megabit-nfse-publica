@@ -1,13 +1,4 @@
 {
-    "4108304": {
-        "municipio": "Foz do Iguaçu",
-        "uf": "PR",
-        "homologacao": "https://homologacao.gestaoiss.com.br/ws/nfse.wsdl",
-        "producao": "",
-        "version": "2.02",
-        "msgns": "http://nfse.abrasf.org.br",
-        "soapns": "http://nfse.abrasf.org.br/"
-    },
     "4200101": {
         "municipio": "Abelardo Luz",
         "uf": "SC",
