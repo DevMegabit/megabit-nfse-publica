@@ -52,7 +52,7 @@ class Tools extends BaseTools
 
         return $this->wsobj->msgns;
     }
-    
+
     /**
      * Solicita o cancelamento de NFSe (SINCRONO)
      * @param integer $numero
@@ -61,7 +61,7 @@ class Tools extends BaseTools
      * @param integer $numero_ano
      * @return string
      */
-    public function cancelarNfse($numero, $codigo, $id = null, string $motivoCancelamento, $numero_ano = null)
+    public function cancelarNfse($numero, $codigo, $id = null, $numero_ano = null)
     {
         if (empty($id)) {
             $id = $numero;
@@ -72,38 +72,41 @@ class Tools extends BaseTools
         }
         $operation = 'CancelarNfse';
         $pedido = "<Pedido>"
-            . "<InfPedidoCancelamento id=\"$id\">"
+            . "<InfPedidoCancelamento Id=\"{$id}\">"
             . "<IdentificacaoNfse>"
             . "<Numero>" . sprintf("%04d%011d", $numero_ano, $numero) . "</Numero>";
+
         if (!empty($this->config->cnpj)) {
-            $pedido .= "<Cnpj>{$this->config->cnpj}</Cnpj>";
+            $pedido .= "<CpfCnpj><Cnpj>{$this->config->cnpj}</Cnpj></CpfCnpj>";
         } else {
-            $pedido .= "<Cpf>{$this->config->cpf}</Cpf>";
+            $pedido .= "<CpfCnpj><Cpf>{$this->config->cpf}</Cpf></CpfCnpj>";
         }
         $pedido .= "<InscricaoMunicipal>{$this->config->im}</InscricaoMunicipal>"
             . "<CodigoMunicipio>{$this->config->cmun}</CodigoMunicipio>"
             . "</IdentificacaoNfse>"
             . "<CodigoCancelamento>$codigo</CodigoCancelamento>"
-            . "<MotivoCancelamento>$motivoCancelamento</MotivoCancelamento>"
             . "</InfPedidoCancelamento>"
             . "</Pedido>";
-        $content = "<CancelarNfseEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $content = "<CancelarNfseEnvio {$this->getMensagens()}>"
             . $pedido
             . "</CancelarNfseEnvio>";
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'InfPedidoCancelamento',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'Pedido'
-        );
+
         $content = str_replace(
             ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
             '',
             $content
         );
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfPedidoCancelamento',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Pedido'
+        );
+
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
     }
@@ -189,21 +192,9 @@ class Tools extends BaseTools
     public function consultarLoteRps($protocolo)
     {
         $operation = 'ConsultarLoteRps';
-        $content = "<ConsultarLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $content = "<ConsultarLoteRpsEnvio {$this->getMensagens()}>"
             . $this->prestador
             . "</ConsultarLoteRpsEnvio>";
-
-        $content = str_replace("<CpfCnpj>", "", $content);
-        $content = str_replace("</CpfCnpj>", "", $content);
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'Prestador',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            ''
-        );
 
         $content = str_replace(
             ['</ConsultarLoteRpsEnvio>'],
@@ -353,23 +344,13 @@ class Tools extends BaseTools
      * @param integer $numero_ano
      * @return string
      */
-    public function consultarNfseFaixa($numero_ini, $numero_fim, $numero_ano)
+    public function consultarNfseFaixa($numero_ini, $numero_fim, $numero_ano, $pagina = 1)
     {
-        $operation = 'ConsultarNfseFaixa';
+        $operation = 'ConsultarNfsePorFaixa';
 
-        $content = "<ConsultarNfseFaixaEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $content = "<ConsultarNfseFaixaEnvio {$this->getMensagens()}>"
             . $this->prestador
             . "</ConsultarNfseFaixaEnvio>";
-
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'Prestador',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            ''
-        );
 
         $content = str_replace(
             ['</ConsultarNfseFaixaEnvio>'],
@@ -377,10 +358,13 @@ class Tools extends BaseTools
                 "<Faixa>"
                     . "<NumeroNfseInicial>" . sprintf("%04d%011d", $numero_ano, $numero_ini) . "</NumeroNfseInicial>"
                     . "<NumeroNfseFinal>" . sprintf("%04d%011d", $numero_ano, $numero_fim) . "</NumeroNfseFinal>"
-                    . "</Faixa></ConsultarNfseFaixaEnvio>"
+                    . "</Faixa>"
+                    . "<Pagina>{$pagina}</Pagina>"
+                    . "</ConsultarNfseFaixaEnvio>"
             ],
             $content
         );
+
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
     }
