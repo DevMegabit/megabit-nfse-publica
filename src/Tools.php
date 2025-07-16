@@ -45,6 +45,14 @@ class Tools extends BaseTools
         $this->xsdpath = $path . "/" . $this->schema;
     }
 
+    private function getMensagens()
+    {
+        if (is_array($this->wsobj->msgns))
+            return implode(" ", $this->wsobj->msgns);
+
+        return $this->wsobj->msgns;
+    }
+    
     /**
      * Solicita o cancelamento de NFSe (SINCRONO)
      * @param integer $numero
@@ -387,7 +395,7 @@ class Tools extends BaseTools
     public function consultarNfseRps($numero, $serie, $tipo)
     {
         $operation = "ConsultarNfsePorRps";
-        $content = "<ConsultarNfseRpsEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $content = "<ConsultarNfseRpsEnvio {$this->getMensagens()}>"
             . "<IdentificacaoRps>"
             . "<Numero>{$numero}</Numero>"
             . "<Serie>{$serie}</Serie>"
@@ -395,16 +403,6 @@ class Tools extends BaseTools
             . "</IdentificacaoRps>"
             . $this->prestador
             . "</ConsultarNfseRpsEnvio>";
-
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'Prestador',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            ''
-        );
 
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
