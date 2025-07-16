@@ -118,7 +118,7 @@ class SoapCurl extends SoapBase implements SoapInterface
         }
 
         //remover apos os testes
-        file_put_contents(sys_get_temp_dir() . "/res_{$action}_{$ts}.xml", $this->responseBody);
+        // file_put_contents(sys_get_temp_dir() . "/res_{$action}_{$ts}.xml", $this->responseBody);
 
         return $this->responseBody;
     }
