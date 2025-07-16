@@ -59,7 +59,7 @@ class Tools
      */
     protected function buildPrestadorTag()
     {
-        $this->prestador = "<Prestador id=\"prestador\">"
+        $this->prestador = "<Prestador>"
             . "<CpfCnpj>";
         if (!empty($this->config->cnpj)) {
             $this->prestador .= "<Cnpj>{$this->config->cnpj}</Cnpj>";
