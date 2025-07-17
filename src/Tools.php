@@ -399,19 +399,14 @@ class Tools extends BaseTools
      * @return string
      * @throws \Exception
      */
-    public function recepcionarRps($arps, $lote)
+    public function recepcionarRps($content, $lote, $no_of_rps_in_lot = 1)
     {
         $operation = 'RecepcionarLoteRpsSincrono';
-        $no_of_rps_in_lot = count($arps);
-        if ($no_of_rps_in_lot > 2) {
-            throw new \Exception('O limite é de 2 RPS por lote enviado em modo sincrono.');
+
+        if ($no_of_rps_in_lot > 1) {
+            throw new \Exception('O limite é de 1 RPS por lote enviado em modo sincrono.');
         }
-        $content = '';
-        foreach ($arps as $rps) {
-            $rps->config($this->config);
-            $content .= $rps->render();
-        }
-        $contentmsg = "<EnviarLoteRpsSincronoEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $contentmsg = "<EnviarLoteRpsSincronoEnvio {$this->getMensagens()}>"
             . "<LoteRps Id=\"lote{$lote}\" versao=\"{$this->wsobj->version}\">"
             . "<NumeroLote>$lote</NumeroLote>"
             . "<CpfCnpj>"
@@ -433,15 +428,17 @@ class Tools extends BaseTools
             [true, false, null, null],
             'Rps'
         );
-        // $content = Signer::sign(
-        //     $this->certificate,
-        //     $content,
-        //     'LoteRps',
-        //     'Id',
-        //     OPENSSL_ALGO_SHA1,
-        //     [true, false, null, null],
-        //     'EnviarLoteRpsSincronoEnvio'
-        // );
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'LoteRps',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'EnviarLoteRpsSincronoEnvio'
+        );
+
         $content = str_replace(
             ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
             '',
@@ -461,21 +458,20 @@ class Tools extends BaseTools
     public function recepcionarLoteRps($arps, $lote)
     {
         $operation = 'RecepcionarLoteRps';
+
         $no_of_rps_in_lot = count($arps);
-        if ($no_of_rps_in_lot > 50) {
-            throw new \Exception('O limite é de 50 RPS por lote enviado em modo sincrono.');
+        if ($no_of_rps_in_lot > 500) {
+            throw new \Exception('O limite é de 500 RPS por lote enviado em modo sincrono.');
         }
         $content = '';
         foreach ($arps as $rps) {
-            $rps->config($this->config);
-            $content .= $rps->render();
+            $content .= "<Rps>$rps</Rps>";
         }
-        $contentmsg = "<EnviarLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\" "
-            . "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-            . "xsi:schemaLocation=\"{$this->wsobj->msgns} {$this->schema}\">"
-            . "<LoteRps versao=\"{$this->wsobj->version}\">"
+
+        $contentmsg = "<EnviarLoteRpsEnvio {$this->getMensagens()}>"
+            . "<LoteRps Id=\"loteRPS\" versao=\"{$this->wsobj->version}\">"
             . "<NumeroLote>$lote</NumeroLote>"
-            . "<Cnpj>{$this->config->cnpj}</Cnpj>"
+            . "<CpfCnpj><Cnpj>{$this->config->cnpj}</Cnpj></CpfCnpj>"
             . "<InscricaoMunicipal>" . $this->config->im . "</InscricaoMunicipal>"
             . "<QuantidadeRps>$no_of_rps_in_lot</QuantidadeRps>"
             . "<ListaRps>"
@@ -483,15 +479,24 @@ class Tools extends BaseTools
             . "</ListaRps>"
             . "</LoteRps>"
             . "</EnviarLoteRpsEnvio>";
+
+        $contentmsg = str_replace(
+            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
+            '',
+            $contentmsg
+        );
+
+
         $content = Signer::sign(
             $this->certificate,
             $contentmsg,
-            'InfRps',
-            'id',
+            'InfDeclaracaoPrestacaoServico',
+            'Id',
             OPENSSL_ALGO_SHA1,
             [true, false, null, null],
             'Rps'
         );
+
         $content = Signer::sign(
             $this->certificate,
             $content,
@@ -501,12 +506,15 @@ class Tools extends BaseTools
             [true, false, null, null],
             'EnviarLoteRpsEnvio'
         );
+
         $content = str_replace(
             ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
             '',
             $content
         );
+
         Validator::isValid($content, $this->xsdpath);
+
         return $this->send($content, $operation);
     }
 
