@@ -392,34 +392,41 @@ class Tools extends BaseTools
         return $this->send($content, $operation);
     }
 
-    /**
-     * Envia LOTE de RPS para emissão de NFSe (SINCRONO)
-     * @param array $arps Array contendo de 1 a 2 RPS::class
-     * @param string $lote Número do lote de envio
-     * @return string
-     * @throws \Exception
-     */
-    public function recepcionarRps($content, $lote, $no_of_rps_in_lot = 1)
+    protected function mountRpsXML($arps, $mode = 'sincrono', $limit = 500)
     {
-        $operation = 'RecepcionarLoteRpsSincrono';
+        if (count($arps) > $limit)
+            throw new \Exception("O limite é de $limit RPS por lote enviado em modo $mode.");
 
-        if ($no_of_rps_in_lot > 1) {
-            throw new \Exception('O limite é de 1 RPS por lote enviado em modo sincrono.');
-        }
-        $contentmsg = "<EnviarLoteRpsSincronoEnvio {$this->getMensagens()}>"
-            . "<LoteRps Id=\"lote{$lote}\" versao=\"{$this->wsobj->version}\">"
+        $content = '';
+        foreach ($arps as $rps)
+            $content .= "<Rps>$rps</Rps>";
+
+        return $content;
+    }
+
+    protected function mountLoteRpsXML($rootElement, $arps, $lote, $method)
+    {
+        $content = $this->mountRpsXML($arps, $method);
+        $qtdRps = count($arps);
+
+        $contentmsg = "<$rootElement {$this->getMensagens()}>"
+            . "<LoteRps Id=\"loteRPS_$lote\" versao=\"{$this->wsobj->version}\">"
             . "<NumeroLote>$lote</NumeroLote>"
-            . "<CpfCnpj>"
-            . "<Cnpj>{$this->config->cnpj}</Cnpj>"
-            . "</CpfCnpj>"
+            . "<CpfCnpj><Cnpj>{$this->config->cnpj}</Cnpj></CpfCnpj>"
             . "<InscricaoMunicipal>" . $this->config->im . "</InscricaoMunicipal>"
-            . "<QuantidadeRps>$no_of_rps_in_lot</QuantidadeRps>"
+            . "<QuantidadeRps>$qtdRps</QuantidadeRps>"
             . "<ListaRps>"
             . $content
             . "</ListaRps>"
             . "</LoteRps>"
-            . "</EnviarLoteRpsSincronoEnvio>";
-        $content = Signer::sign(
+            . "</$rootElement>";
+
+        $contentmsg = $this->removeTag(
+            $contentmsg,
+            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>']
+        );
+
+        $contentmsg = Signer::sign(
             $this->certificate,
             $contentmsg,
             'InfDeclaracaoPrestacaoServico',
@@ -431,21 +438,47 @@ class Tools extends BaseTools
 
         $content = Signer::sign(
             $this->certificate,
-            $content,
+            $contentmsg,
             'LoteRps',
             'Id',
             OPENSSL_ALGO_SHA1,
             [true, false, null, null],
-            'EnviarLoteRpsSincronoEnvio'
+            $rootElement
         );
 
-        $content = str_replace(
-            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
+        return $content;
+    }
+
+    /**
+     * Envia LOTE de RPS para emissão de NFSe (SINCRONO)
+     * @param array $arps Array contendo de 1 a 2 RPS::class
+     * @param string $lote Número do lote de envio
+     * @return string
+     * @throws \Exception
+     */
+    public function recepcionarRps($arps, $lote)
+    {
+        $operation = 'RecepcionarLoteRpsSincrono';
+
+        $content = $this->mountLoteRpsXML(
+            'EnviarLoteRpsSincronoEnvio',
+            $arps,
+            $lote,
+            'sincrono'
+        );
+
+        Validator::isValid($content, $this->xsdpath);
+
+        return $this->send($content, $operation);
+    }
+
+    protected function removeTag($content, $tag)
+    {
+        return str_replace(
+            $tag,
             '',
             $content
         );
-        Validator::isValid($content, $this->xsdpath);
-        return $this->send($content, $operation);
     }
 
     /**
@@ -459,59 +492,13 @@ class Tools extends BaseTools
     {
         $operation = 'RecepcionarLoteRps';
 
-        $no_of_rps_in_lot = count($arps);
-        if ($no_of_rps_in_lot > 500) {
-            throw new \Exception('O limite é de 500 RPS por lote enviado em modo sincrono.');
-        }
-        $content = '';
-        foreach ($arps as $rps) {
-            $content .= "<Rps>$rps</Rps>";
-        }
-
-        $contentmsg = "<EnviarLoteRpsEnvio {$this->getMensagens()}>"
-            . "<LoteRps Id=\"loteRPS\" versao=\"{$this->wsobj->version}\">"
-            . "<NumeroLote>$lote</NumeroLote>"
-            . "<CpfCnpj><Cnpj>{$this->config->cnpj}</Cnpj></CpfCnpj>"
-            . "<InscricaoMunicipal>" . $this->config->im . "</InscricaoMunicipal>"
-            . "<QuantidadeRps>$no_of_rps_in_lot</QuantidadeRps>"
-            . "<ListaRps>"
-            . $content
-            . "</ListaRps>"
-            . "</LoteRps>"
-            . "</EnviarLoteRpsEnvio>";
-
-        $contentmsg = str_replace(
-            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
-            '',
-            $contentmsg
+        $content = $this->mountLoteRpsXML(
+            'EnviarLoteRpsEnvio',
+            $arps,
+            $lote,
+            'assincrono'
         );
 
-
-        $content = Signer::sign(
-            $this->certificate,
-            $contentmsg,
-            'InfDeclaracaoPrestacaoServico',
-            'Id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'Rps'
-        );
-
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'LoteRps',
-            'Id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'EnviarLoteRpsEnvio'
-        );
-
-        $content = str_replace(
-            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
-            '',
-            $content
-        );
 
         Validator::isValid($content, $this->xsdpath);
 
