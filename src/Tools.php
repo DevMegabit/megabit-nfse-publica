@@ -546,12 +546,44 @@ class Tools extends BaseTools
         return $this->send($content, $operation);
     }
 
-    /**
+public function gerarNfse($content)
+    {
+        $operation = "GerarNfse";
+
+        $ini = strpos($content, "<Rps>");
+        $fim = strpos($content, "</Rps>") + 6;
+        $tagRps = substr($content, $ini, $fim - $ini);
+
+        $newContent = substr($content, 0, $ini) . substr($content, $fim);
+        $newContent = str_replace("<InfDeclaracaoPrestacaoServico", "<Rps><InfDeclaracaoPrestacaoServico", $newContent);
+        $newContent = str_replace("</InfDeclaracaoPrestacaoServico>", "</InfDeclaracaoPrestacaoServico></Rps>", $newContent);
+        $newContent = substr($newContent, 39);
+        $newContent = str_replace("<Competencia>", "{$tagRps}<Competencia>", $newContent);
+        
+
+        $content = "<GerarNfseEnvio {$this->getMensagens()}>"
+            . $newContent
+            . "</GerarNfseEnvio>";
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfDeclaracaoPrestacaoServico',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Rps'
+        );
+        Validator::isValid($content, $this->xsdpath);
+        
+        return $this->send($content, $operation);
+    }
+        /**
      * Solicita a emissão de uma NFSe de forma SINCRONA
      * @param RpsInterface $rps
      * @return string
      */
-    public function gerarNfse(RpsInterface $rps)
+    public function gerarNfse1(RpsInterface $rps)
     {
         return $this->gerarNfseFromString($this->gerarNfseSignedRequest($rps));
     }
