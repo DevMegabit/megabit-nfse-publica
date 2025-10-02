@@ -3,7 +3,7 @@
     "municipio": "Foz do Iguaçu",
     "uf": "PR",
     "homologacao": "https://homologacao.gestaoiss.com.br/ws/nfse.asmx",
-    "producao": "",
+    "producao": " https://fozdoiguacupr.gestaoiss.com.br/ws/nfse.asmx",
     "version": "2.02",
     "msgns": [
       "xmlns='http://www.abrasf.org.br/nfse.xsd'",
