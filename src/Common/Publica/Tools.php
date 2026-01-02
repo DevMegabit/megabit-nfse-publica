@@ -1,6 +1,6 @@
 <?php
 
-namespace NFePHP\NFSePublica\Common;
+namespace NFePHP\NFSePublica\Common\Publica;
 
 /**
  * Auxiar Tools Class for comunications with NFSe webserver in Nacional Standard
@@ -59,7 +59,7 @@ class Tools
      */
     protected function buildPrestadorTag()
     {
-        $this->prestador = "<Prestador>"
+        $this->prestador = "<Prestador id=\"prestador\">"
             . "<CpfCnpj>";
         if (!empty($this->config->cnpj)) {
             $this->prestador .= "<Cnpj>{$this->config->cnpj}</Cnpj>";
@@ -79,7 +79,7 @@ class Tools
      */
     protected function loadWsobj($cmun)
     {
-        $path = realpath(__DIR__ . "/../../storage/urls_webservices.json");
+        $path = realpath(__DIR__ . "../../../../storage/urls_webservices.json");
         $urls = json_decode(file_get_contents($path), true);
         if (empty($urls[$cmun])) {
             throw new \Exception("Não localizado parâmetros para esse municipio.");
@@ -140,7 +140,6 @@ class Tools
             $this->soap = new SoapCurl($this->certificate);
         }
         $msgSize = strlen($request);
-        $action = 'http://nfse.abrasf.org.br/' . $action;
         $parameters = [
             "Content-Type: text/xml;charset=UTF-8",
             "SOAPAction: \"$action\"",
@@ -184,23 +183,22 @@ class Tools
     protected function createSoapRequest($message, $operation)
     {
 
-        $header = "<cabecalho xmlns=\"{$this->wsobj->soapns}\" versao=\"{$this->wsobj->version}\">"
-            . "<versaoDados>{$this->wsobj->version}</versaoDados>"
-            . "</cabecalho>";
-        
-        $cdata = htmlspecialchars($message, ENT_NOQUOTES);
+        // $header = "<cabecalho versao=\"{$this->wsobj->version}\" xmlns=\"{$this->wsobj->soapns}\">"
+        //    . "<versaoDados>{$this->wsobj->version}</versaoDados>"
+        //    . "</cabecalho>";
 
-        $cheader = htmlspecialchars($header, ENT_NOQUOTES);
+        $cdata = htmlspecialchars($message, ENT_NOQUOTES);
+        // $cheader = htmlspecialchars($header, ENT_NOQUOTES);
 
         $env = "<soapenv:Envelope "
             . "xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" "
-            . "xmlns:nfse=\"{$this->wsobj->soapns}\">"
-            . "<soapenv:Header />"
-            . "<soapenv:Body >"
-            . "<{$operation}Request xmlns=\"http://nfse.abrasf.org.br\">"
-            . "<nfseCabecMsg xmlns=\"\">{$cheader}</nfseCabecMsg>"
-            . "<nfseDadosMsg xmlns=\"\">{$cdata}</nfseDadosMsg>"
-            . "</{$operation}Request>"
+            . "xmlns:e=\"{$this->wsobj->soapns}\">"
+            // . "<soapenv:Header/>"
+            . "<soapenv:Body>"
+            . "<e:{$operation}>"
+            // . "<nfseCabecMsg>{$cheader}</nfseCabecMsg>"
+            . "<XML>{$cdata}</XML>"
+            . "</e:{$operation}>"
             . "</soapenv:Body>"
             . "</soapenv:Envelope>";
 

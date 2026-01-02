@@ -332,6 +332,13 @@ class Factory
             $serv->codigomunicipio,
             true
         );
+
+        $this->dom->addChild(
+            $node,
+            "cNBS",
+            $serv->cnbs,
+            true
+        );        
         /*
         $this->dom->addChild(
             $node,

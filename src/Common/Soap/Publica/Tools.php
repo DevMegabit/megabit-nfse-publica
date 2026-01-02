@@ -1,6 +1,6 @@
 <?php
 
-namespace NFePHP\NFSePublica\Common;
+namespace NFePHP\NFSePublica\Common\Publica;
 
 /**
  * Auxiar Tools Class for comunications with NFSe webserver in Nacional Standard
@@ -21,7 +21,7 @@ use NFePHP\Common\DOMImproved as Dom;
 use NFePHP\NFSePublica\RpsInterface;
 use NFePHP\NFSePublica\Common\Signer;
 use NFePHP\NFSePublica\Common\Soap\SoapInterface;
-use NFePHP\NFSePublica\Common\Soap\SoapCurl;
+use NFePHP\NFSePublica\Common\Soap\Publica\SoapCurl;
 
 /**
  * Classe Tools
@@ -79,7 +79,7 @@ class Tools
      */
     protected function loadWsobj($cmun)
     {
-        $path = realpath(__DIR__ . "/../../storage/urls_webservices.json");
+        $path = realpath(__DIR__ . "../../../../storage/urls_webservices.json");
         $urls = json_decode(file_get_contents($path), true);
         if (empty($urls[$cmun])) {
             throw new \Exception("Não localizado parâmetros para esse municipio.");

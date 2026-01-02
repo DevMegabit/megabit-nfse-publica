@@ -1,6 +1,6 @@
 <?php
 
-namespace NFePHP\NFSePublica;
+namespace NFePHP\NFSePublica\Abrasf;
 
 /**
  * Class for comunications with NFSe webserver in Nacional Standard
@@ -15,7 +15,7 @@ namespace NFePHP\NFSePublica;
  * @link      http://github.com/nfephp-org/sped-nfse-publica for the canonical source repository
  */
 
-use NFePHP\NFSePublica\Common\Tools as BaseTools;
+use NFePHP\NFSePublica\Common\Abrasf\Tools as BaseTools;
 use NFePHP\NFSePublica\RpsInterface;
 use NFePHP\Common\Certificate;
 use NFePHP\Common\Validator;
@@ -28,19 +28,29 @@ class Tools extends BaseTools
     const CANCEL_DUPLICIDADE = 4;
 
     protected $xsdpath;
+    protected $schema;
 
     /**
      * Constructor
      * @param string $config
      * @param Certificate $cert
      */
-    public function __construct($config, Certificate $cert)
+    public function __construct($config, Certificate $cert, $versionSchema = 'v03')
     {
         parent::__construct($config, $cert);
         $path = realpath(
-            __DIR__ . '/../storage/schemes'
+            __DIR__ . '../../../storage/schemes'
         );
-        $this->xsdpath = $path . '/schema_nfse_v03.xsd';
+        $this->schema =  "schema_nfse_$versionSchema.xsd";
+        $this->xsdpath = $path . "/" . $this->schema;
+    }
+
+    private function getMensagens()
+    {
+        if (is_array($this->wsobj->msgns))
+            return implode(" ", $this->wsobj->msgns);
+
+        return $this->wsobj->msgns;
     }
 
     /**
@@ -51,7 +61,7 @@ class Tools extends BaseTools
      * @param integer $numero_ano
      * @return string
      */
-    public function cancelarNfse($numero, $codigo, $id = null, string $motivoCancelamento, $numero_ano = null)
+    public function cancelarNfse($numero, $codigo, $id = null, $numero_ano = null)
     {
         if (empty($id)) {
             $id = $numero;
@@ -62,38 +72,41 @@ class Tools extends BaseTools
         }
         $operation = 'CancelarNfse';
         $pedido = "<Pedido>"
-            . "<InfPedidoCancelamento id=\"$id\">"
+            . "<InfPedidoCancelamento Id=\"{$id}\">"
             . "<IdentificacaoNfse>"
             . "<Numero>" . sprintf("%04d%011d", $numero_ano, $numero) . "</Numero>";
+
         if (!empty($this->config->cnpj)) {
-            $pedido .= "<Cnpj>{$this->config->cnpj}</Cnpj>";
+            $pedido .= "<CpfCnpj><Cnpj>{$this->config->cnpj}</Cnpj></CpfCnpj>";
         } else {
-            $pedido .= "<Cpf>{$this->config->cpf}</Cpf>";
+            $pedido .= "<CpfCnpj><Cpf>{$this->config->cpf}</Cpf></CpfCnpj>";
         }
         $pedido .= "<InscricaoMunicipal>{$this->config->im}</InscricaoMunicipal>"
             . "<CodigoMunicipio>{$this->config->cmun}</CodigoMunicipio>"
             . "</IdentificacaoNfse>"
             . "<CodigoCancelamento>$codigo</CodigoCancelamento>"
-            . "<MotivoCancelamento>$motivoCancelamento</MotivoCancelamento>"
             . "</InfPedidoCancelamento>"
             . "</Pedido>";
-        $content = "<CancelarNfseEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $content = "<CancelarNfseEnvio {$this->getMensagens()}>"
             . $pedido
             . "</CancelarNfseEnvio>";
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'InfPedidoCancelamento',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'Pedido'
-        );
+
         $content = str_replace(
             ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
             '',
             $content
         );
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfPedidoCancelamento',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Pedido'
+        );
+
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
     }
@@ -179,21 +192,9 @@ class Tools extends BaseTools
     public function consultarLoteRps($protocolo)
     {
         $operation = 'ConsultarLoteRps';
-        $content = "<ConsultarLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $content = "<ConsultarLoteRpsEnvio {$this->getMensagens()}>"
             . $this->prestador
             . "</ConsultarLoteRpsEnvio>";
-
-        $content = str_replace("<CpfCnpj>", "", $content);
-        $content = str_replace("</CpfCnpj>", "", $content);
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'Prestador',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            ''
-        );
 
         $content = str_replace(
             ['</ConsultarLoteRpsEnvio>'],
@@ -204,7 +205,7 @@ class Tools extends BaseTools
             $content
         );
 
-        Validator::isValid($content, $this->xsdpath);
+        // Validator::isValid($content, $this->xsdpath);
 
         return $this->send($content, $operation);
     }
@@ -343,23 +344,13 @@ class Tools extends BaseTools
      * @param integer $numero_ano
      * @return string
      */
-    public function consultarNfseFaixa($numero_ini, $numero_fim, $numero_ano)
+    public function consultarNfseFaixa($numero_ini, $numero_fim, $numero_ano, $pagina = 1)
     {
-        $operation = 'ConsultarNfseFaixa';
+        $operation = 'ConsultarNfsePorFaixa';
 
-        $content = "<ConsultarNfseFaixaEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $content = "<ConsultarNfseFaixaEnvio {$this->getMensagens()}>"
             . $this->prestador
             . "</ConsultarNfseFaixaEnvio>";
-
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'Prestador',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            ''
-        );
 
         $content = str_replace(
             ['</ConsultarNfseFaixaEnvio>'],
@@ -367,10 +358,13 @@ class Tools extends BaseTools
                 "<Faixa>"
                     . "<NumeroNfseInicial>" . sprintf("%04d%011d", $numero_ano, $numero_ini) . "</NumeroNfseInicial>"
                     . "<NumeroNfseFinal>" . sprintf("%04d%011d", $numero_ano, $numero_fim) . "</NumeroNfseFinal>"
-                    . "</Faixa></ConsultarNfseFaixaEnvio>"
+                    . "</Faixa>"
+                    . "<Pagina>{$pagina}</Pagina>"
+                    . "</ConsultarNfseFaixaEnvio>"
             ],
             $content
         );
+
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
     }
@@ -385,7 +379,7 @@ class Tools extends BaseTools
     public function consultarNfseRps($numero, $serie, $tipo)
     {
         $operation = "ConsultarNfsePorRps";
-        $content = "<ConsultarNfseRpsEnvio xmlns=\"{$this->wsobj->msgns}\">"
+        $content = "<ConsultarNfseRpsEnvio {$this->getMensagens()}>"
             . "<IdentificacaoRps>"
             . "<Numero>{$numero}</Numero>"
             . "<Serie>{$serie}</Serie>"
@@ -394,18 +388,65 @@ class Tools extends BaseTools
             . $this->prestador
             . "</ConsultarNfseRpsEnvio>";
 
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'Prestador',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            ''
-        );
-
         Validator::isValid($content, $this->xsdpath);
         return $this->send($content, $operation);
+    }
+
+    protected function mountRpsXML($arps, $mode = 'sincrono', $limit = 500)
+    {
+        if (count($arps) > $limit)
+            throw new \Exception("O limite é de $limit RPS por lote enviado em modo $mode.");
+
+        $content = '';
+        foreach ($arps as $rps)
+            $content .= "<Rps>$rps</Rps>";
+
+        return $content;
+    }
+
+    protected function mountLoteRpsXML($rootElement, $arps, $lote, $method)
+    {
+        $content = $this->mountRpsXML($arps, $method);
+        $qtdRps = count($arps);
+
+        $contentmsg = "<$rootElement {$this->getMensagens()}>"
+            . "<LoteRps Id=\"loteRPS_$lote\" versao=\"{$this->wsobj->version}\">"
+            . "<NumeroLote>$lote</NumeroLote>"
+            . "<CpfCnpj><Cnpj>{$this->config->cnpj}</Cnpj></CpfCnpj>"
+            . "<InscricaoMunicipal>" . $this->config->im . "</InscricaoMunicipal>"
+            . "<QuantidadeRps>$qtdRps</QuantidadeRps>"
+            . "<ListaRps>"
+            . $content
+            . "</ListaRps>"
+            . "</LoteRps>"
+            . "</$rootElement>";
+
+        $contentmsg = $this->removeTag(
+            $contentmsg,
+            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>']
+        );
+
+        $contentmsg = Signer::sign(
+            $this->certificate,
+            $contentmsg,
+            'InfDeclaracaoPrestacaoServico',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Rps'
+        );
+
+        $content = Signer::sign(
+            $this->certificate,
+            $contentmsg,
+            'LoteRps',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            $rootElement
+        );
+
+        return $content;
     }
 
     /**
@@ -418,53 +459,26 @@ class Tools extends BaseTools
     public function recepcionarRps($arps, $lote)
     {
         $operation = 'RecepcionarLoteRpsSincrono';
-        $no_of_rps_in_lot = count($arps);
-        if ($no_of_rps_in_lot > 2) {
-            throw new \Exception('O limite é de 2 RPS por lote enviado em modo sincrono.');
-        }
-        $content = '';
-        foreach ($arps as $rps) {
-            $rps->config($this->config);
-            $content .= $rps->render();
-        }
-        $contentmsg = "<EnviarLoteRpsSincronoEnvio xmlns=\"{$this->wsobj->msgns}\">"
-            . "<LoteRps Id=\"lote{$lote}\" versao=\"{$this->wsobj->version}\">"
-            . "<NumeroLote>$lote</NumeroLote>"
-            . "<CpfCnpj>"
-            . "<Cnpj>{$this->config->cnpj}</Cnpj>"
-            . "</CpfCnpj>"
-            . "<InscricaoMunicipal>" . $this->config->im . "</InscricaoMunicipal>"
-            . "<QuantidadeRps>$no_of_rps_in_lot</QuantidadeRps>"
-            . "<ListaRps>"
-            . $content
-            . "</ListaRps>"
-            . "</LoteRps>"
-            . "</EnviarLoteRpsSincronoEnvio>";
-        $content = Signer::sign(
-            $this->certificate,
-            $contentmsg,
-            'InfDeclaracaoPrestacaoServico',
-            'Id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'Rps'
+
+        $content = $this->mountLoteRpsXML(
+            'EnviarLoteRpsSincronoEnvio',
+            $arps,
+            $lote,
+            'sincrono'
         );
-        // $content = Signer::sign(
-        //     $this->certificate,
-        //     $content,
-        //     'LoteRps',
-        //     'Id',
-        //     OPENSSL_ALGO_SHA1,
-        //     [true, false, null, null],
-        //     'EnviarLoteRpsSincronoEnvio'
-        // );
-        $content = str_replace(
-            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
+
+        Validator::isValid($content, $this->xsdpath);
+
+        return $this->send($content, $operation);
+    }
+
+    protected function removeTag($content, $tag)
+    {
+        return str_replace(
+            $tag,
             '',
             $content
         );
-        Validator::isValid($content, $this->xsdpath);
-        return $this->send($content, $operation);
     }
 
     /**
@@ -477,52 +491,17 @@ class Tools extends BaseTools
     public function recepcionarLoteRps($arps, $lote)
     {
         $operation = 'RecepcionarLoteRps';
-        $no_of_rps_in_lot = count($arps);
-        if ($no_of_rps_in_lot > 50) {
-            throw new \Exception('O limite é de 50 RPS por lote enviado em modo sincrono.');
-        }
-        $content = '';
-        foreach ($arps as $rps) {
-            $rps->config($this->config);
-            $content .= $rps->render();
-        }
-        $contentmsg = "<EnviarLoteRpsEnvio xmlns=\"{$this->wsobj->msgns}\" "
-            . "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
-            . "xsi:schemaLocation=\"http://www.publica.inf.br schema_nfse_v03.xsd\">"
-            . "<LoteRps versao=\"{$this->wsobj->version}\">"
-            . "<NumeroLote>$lote</NumeroLote>"
-            . "<Cnpj>{$this->config->cnpj}</Cnpj>"
-            . "<InscricaoMunicipal>" . $this->config->im . "</InscricaoMunicipal>"
-            . "<QuantidadeRps>$no_of_rps_in_lot</QuantidadeRps>"
-            . "<ListaRps>"
-            . $content
-            . "</ListaRps>"
-            . "</LoteRps>"
-            . "</EnviarLoteRpsEnvio>";
-        $content = Signer::sign(
-            $this->certificate,
-            $contentmsg,
-            'InfRps',
-            'id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'Rps'
+
+        $content = $this->mountLoteRpsXML(
+            'EnviarLoteRpsEnvio',
+            $arps,
+            $lote,
+            'assincrono'
         );
-        $content = Signer::sign(
-            $this->certificate,
-            $content,
-            'LoteRps',
-            'Id',
-            OPENSSL_ALGO_SHA1,
-            [true, false, null, null],
-            'EnviarLoteRpsEnvio'
-        );
-        $content = str_replace(
-            ['<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-8"?>'],
-            '',
-            $content
-        );
+
+
         Validator::isValid($content, $this->xsdpath);
+
         return $this->send($content, $operation);
     }
 
@@ -567,12 +546,44 @@ class Tools extends BaseTools
         return $this->send($content, $operation);
     }
 
-    /**
+public function gerarNfse($content)
+    {
+        $operation = "GerarNfse";
+
+        $ini = strpos($content, "<Rps>");
+        $fim = strpos($content, "</Rps>") + 6;
+        $tagRps = substr($content, $ini, $fim - $ini);
+
+        $newContent = substr($content, 0, $ini) . substr($content, $fim);
+        $newContent = str_replace("<InfDeclaracaoPrestacaoServico", "<Rps><InfDeclaracaoPrestacaoServico", $newContent);
+        $newContent = str_replace("</InfDeclaracaoPrestacaoServico>", "</InfDeclaracaoPrestacaoServico></Rps>", $newContent);
+        $newContent = substr($newContent, 39);
+        $newContent = str_replace("<Competencia>", "{$tagRps}<Competencia>", $newContent);
+        
+
+        $content = "<GerarNfseEnvio {$this->getMensagens()}>"
+            . $newContent
+            . "</GerarNfseEnvio>";
+
+        $content = Signer::sign(
+            $this->certificate,
+            $content,
+            'InfDeclaracaoPrestacaoServico',
+            'Id',
+            OPENSSL_ALGO_SHA1,
+            [true, false, null, null],
+            'Rps'
+        );
+        Validator::isValid($content, $this->xsdpath);
+        
+        return $this->send($content, $operation);
+    }
+        /**
      * Solicita a emissão de uma NFSe de forma SINCRONA
      * @param RpsInterface $rps
      * @return string
      */
-    public function gerarNfse(RpsInterface $rps)
+    public function gerarNfse1(RpsInterface $rps)
     {
         return $this->gerarNfseFromString($this->gerarNfseSignedRequest($rps));
     }
