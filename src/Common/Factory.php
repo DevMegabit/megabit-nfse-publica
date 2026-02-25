@@ -123,6 +123,7 @@ class Factory
         $this->addTomador($infRps);
         // $this->addIntermediario($infRps);
         // $this->addConstrucao($infRps);
+        $this->addIBSCBS($infRps);
 
         /*
         $this->dom->addChild(
@@ -338,7 +339,7 @@ class Factory
             "cNBS",
             $serv->cnbs,
             true
-        );        
+        );
         /*
         $this->dom->addChild(
             $node,
@@ -553,6 +554,124 @@ class Factory
             $obra->art,
             true
         );
+        $parent->appendChild($node);
+    }
+
+    /**
+     * Includes IBSCBS TAG in parent NODE
+     * @param DOMNode $parent
+     */
+    protected function addIBSCBS(&$parent)
+    {
+        if (!isset($this->std->ibscbs)) {
+            return;
+        }
+        $ibscbs = $this->std->ibscbs;
+        $node = $this->dom->createElement('IBSCBS');
+
+        $this->dom->addChild(
+            $node,
+            "finNFSe",
+            $ibscbs->finnfse,
+            true
+        );
+
+        $this->dom->addChild(
+            $node,
+            "indFinal",
+            $ibscbs->indfinal,
+            true
+        );
+
+        $this->dom->addChild(
+            $node,
+            "cIndOp",
+            $ibscbs->cindop,
+            true
+        );
+
+        $this->dom->addChild(
+            $node,
+            "indDest",
+            $ibscbs->inddest,
+            true
+        );
+
+        $valoresNode = $this->dom->createElement('valores');
+        $tribNode = $this->dom->createElement('trib');
+        $gIBSCBSNode = $this->dom->createElement('gIBSCBS');
+
+        $gIBSCBS = $ibscbs->valores->trib->gibscbs;
+        $this->dom->addChild(
+            $gIBSCBSNode,
+            'CST',
+            $gIBSCBS->cst,
+            true
+        );
+
+        $this->dom->addChild(
+            $gIBSCBSNode,
+            'cClassTrib',
+            $gIBSCBS->cclasstrib,
+            true
+        );
+
+        if (isset($trib->ccredpres))
+            $this->dom->addChild(
+                $gIBSCBSNode,
+                'cCredPres',
+                $gIBSCBS->cCredPres,
+                false
+            );
+
+
+        if (isset($gIBSCBS->gtribregular)) {
+            $gTribRegNode = $this->dom->createElement('gTribRegular');
+
+            $this->dom->addChild(
+                $gTribRegNode,
+                'CSTReg',
+                $gIBSCBS->gtribregular->cstreg,
+                true
+            );
+            $this->dom->addChild(
+                $gTribRegNode,
+                'cClassTribReg',
+                $gIBSCBS->gtribregular->cclasstribreg,
+                true
+            );
+
+            $gIBSCBSNode->appendChild($gTribRegNode);
+        }
+
+        if (isset($gIBSCBS->gdif)) {
+            $gDifNode = $this->dom->createElement('gDif');
+            $this->dom->addChild(
+                $gDifNode,
+                'pDifUF',
+                $gIBSCBS->gdif->pdifuF,
+                false
+            );
+            $this->dom->addChild(
+                $gDifNode,
+                'pDifMun',
+                $gIBSCBS->gdif->pdifmun,
+                false
+            );
+            $this->dom->addChild(
+                $gDifNode,
+                'pDifCBS',
+                $gIBSCBS->gdif->pdifcbs,
+                false
+            );
+
+            $gIBSCBSNode->appendChild($gDifNode);
+        }
+
+        $tribNode->appendChild($gIBSCBSNode);
+        $valoresNode->appendChild($tribNode);
+        $node->appendChild($valoresNode);
+
         $parent->appendChild($node);
     }
 }

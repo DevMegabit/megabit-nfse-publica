@@ -9,6 +9,58 @@
 
     <xsd:import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema20020212.xsd" />
 
+	<xsd:simpleType name="tsDecimal_15_02">
+		<xsd:restriction base="xsd:decimal">
+			<xsd:totalDigits value="15" />
+			<xsd:fractionDigits value="2" />
+			<xsd:minInclusive value="0" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="tsDecimal_05_02">
+		<xsd:restriction base="xsd:decimal">
+			<xsd:totalDigits value="5" />
+			<xsd:fractionDigits value="2" />
+			<xsd:minInclusive value="0" />
+		</xsd:restriction>
+	</xsd:simpleType>
+	
+	<xsd:simpleType name="tsDecimal_04_02">
+		<xsd:restriction base="xsd:decimal">
+			<xsd:totalDigits value="4" />
+			<xsd:fractionDigits value="2" />
+			<xsd:minInclusive value="0" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+    <xsd:simpleType name="tsString_02">
+        <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="2"/>
+            <xsd:minLength value="1"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
+    <xsd:simpleType name="tsString_07">
+        <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="7"/>
+            <xsd:minLength value="1"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
+	<xsd:simpleType name="tsString_600">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="600"/>
+            <xsd:minLength value="1"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+    
+    <xsd:simpleType name="tsInteger_07">
+        <xsd:restriction base="xsd:int">
+            <xsd:totalDigits value="7"/>
+        </xsd:restriction>
+    </xsd:simpleType>    
+
+
     <xsd:simpleType name="tsVersao">
         <xsd:restriction base="xsd:token">
             <xsd:pattern value="[1-9]{1}[0-9]{0,1}\.[0-9]{2}"/>
@@ -448,7 +500,6 @@
 	    </xsd:restriction>
 	</xsd:simpleType>
 	    
-
     <xsd:simpleType name="tsMotivoCancelamentoNfse">
         <xsd:restriction base="xsd:string">
             <xsd:maxLength value="255"/>
@@ -472,7 +523,7 @@
             <xsd:element name="NaturezaOperacao" type="tsNaturezaOperacao" minOccurs="1" maxOccurs="1"/>
             <xsd:element name="OptanteSimplesNacional" type="tsSimNao" minOccurs="1" maxOccurs="1"/>
             <xsd:element name="IncentivadorCultural" type="tsSimNao" minOccurs="1" maxOccurs="1"/>
-            <xsd:element name="Competencia" type="xsd:gYearMonth" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="Competencia" type="xsd:string" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="Status" type="tsStatusRps" minOccurs="1" maxOccurs="1"/>
             <xsd:element name="RpsSubstituido" type="tcIdentificacaoRps" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="Servico" type="tcDadosServico" minOccurs="1" maxOccurs="1"/>
@@ -485,6 +536,7 @@
             <xsd:element name="CondicaoPagamento" type="tcCondicoesPagamentos" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="ConstrucaoCivil" type="tcConstrucaoCivil" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="Retificacao" type="tcRetificacaoRps" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="IBSCBS" type="tcRTCIBSCBS" minOccurs="0" maxOccurs="1"/>
         </xsd:sequence>
         <xsd:attribute name="id" type="tsIdTag"/>
     </xsd:complexType>
@@ -1125,7 +1177,7 @@
             <xsd:element name="NaturezaOperacao" type="tsNaturezaOperacao" minOccurs="1" maxOccurs="1"/>
             <xsd:element name="OptanteSimplesNacional" type="tsSimNao" minOccurs="1" maxOccurs="1"/>
             <xsd:element name="IncentivadorCultural" type="tsSimNao" minOccurs="1" maxOccurs="1"/>
-            <xsd:element name="Competencia" type="xsd:gYearMonth" minOccurs="1" maxOccurs="1"/>
+            <xsd:element name="Competencia" type="xsd:string" minOccurs="1" maxOccurs="1"/>
             <xsd:element name="NfseSubstituida" type="tsNumeroNfse" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="OutrasInformacoes" type="tsOutrasInformacoes" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="Servico" type="tcDadosServico" minOccurs="1" maxOccurs="1"/>
@@ -1616,5 +1668,459 @@
             <xsd:maxInclusive value="999999" />
         </xsd:restriction>
     </xsd:simpleType>    
+
+    <!--INICIO IBSCBS -->
+	<xsd:element name="IBSCBS" type="tcRTCIBSCBS">
+		<xsd:annotation>
+			<xsd:documentation>
+				Grupo de informações geradas pelo sistema referentes ao IBS e à CBS
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:complexType name="tcRTCIBSCBS">
+		<xsd:sequence>
+			<xsd:element name="cLocalidadeIncid" type="tsInteger_07" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Código IBGE da localidade de incidência do IBS/CBS (local da operação)
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="xLocalidadeIncid" type="tsString_600" minOccurs="0"  maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Nome da localidade de incidência do IBS/CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pRedutor" type="tsDecimal_04_02" minOccurs="0"  maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Percentual de redução de aliquota em compra governamental
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="valores" type="tcRTCValoresIBSCBS" minOccurs="0"  maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de valores brutos referentes ao IBS/CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="totCIBS" type="tcRTCTotalCIBS" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de Totalizadores
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="valores" type="tcRTCValoresIBSCBS">
+		<xsd:annotation>
+			<xsd:documentation>
+				Grupo de valores brutos referentes ao IBS/CBS
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<xsd:element name="totCIBS" type="tcRTCTotalCIBS">
+		<xsd:annotation>
+			<xsd:documentation>
+				Grupo de Totalizadores
+			</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+
+	<!--TIPO COMPLEXO DOS VALORES BRUTOS IBSCBS -->
+	<xsd:complexType name="tcRTCValoresIBSCBS">
+		<xsd:sequence>
+			<xsd:element name="vBC" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor da base de cálculo (BC) do IBS/CBS antes das reduções para cálculo do tributo bruto vBC = vServ - descIncond – vCalcReeRepRes – vISSQN – vPIS - vCOFINS (até 2026) ou vBC = vServ - descIncond – vCalcReeRepRes – vISSQN (até 2032)
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vCalcReeRepRes" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor monetário (R$) total relativo ao fornecimento próprio de bens materiais ou relacionados a operações de terceiros, objeto de reembolso, repasse ou ressarcimento pelo recebedor, já tributados e aqui referenciados e que não integram da base de cálculo (BC) do ISSQN, do IBS e da CBS.
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="uf" type="tcRTCValoresIBSCBSUF" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de Informações relativas aos valores do IBS Estadual
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="mun" type="tcRTCValoresIBSCBSMun" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de Informações relativas aos valores do IBS Municipal
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="fed" type="tcRTCValoresIBSCBSFed" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de Informações relativas aos valores da CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES IBSCBS -->
+	<xsd:complexType name="tcRTCTotalCIBS">
+		<xsd:sequence>
+			<xsd:element name="vTotNF" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor Total da NF considerando os impostos por fora: IBS e CBS O IBS e a CBS são por fora, por isso seus valores devem ser adicionados ao valor total da NF vTotNF = vLiq (em 2026) vTotNF = vLiq + vCBS + vIBSTot (a partir de 2027)
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="gIBS" type="tcRTCTotalIBS" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de valores referentes ao IBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="gCBS" type="tcRTCTotalCBS" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de valores referentes à CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="gTribRegular" type="tcRTCTotalTribRegular" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de informações de tributação regular
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="gTribCompraGov" type="tcRTCTotalTribCompraGov" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de informações da composição do valor do IBS e da CBS em compras governamentais
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO IBS MUNICIPAL -->
+	<xsd:complexType name="tcRTCValoresIBSCBSMun">
+		<xsd:sequence>
+			<xsd:element name="pIBSMun" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota do Município para IBS da localidade de incidência parametrizada no sistema
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pRedAliqMun" type="tsDecimal_05_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Percentual de redução de alíquota municipal
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pAliqEfetMun" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						pAliqEfetMun = pIBSMun x (1 - pRedAliqMun) x (1 - pRedutor) Se pRedAliqMun não for informado na DPS, então pAliqEfetMun é a própria pIBSMun
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO CBS -->
+	<xsd:complexType name="tcRTCValoresIBSCBSFed">
+		<xsd:sequence>
+			<xsd:element name="pCBS" type="tsDecimal_15_02">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota da União para CBS parametrizada no sistema
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pRedAliqCBS" type="tsDecimal_05_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Percentual da redução de alíquota da CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pAliqEfetCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						pAliqEfetCBS = pCBS x (1 - pRedAliqCBS) x (1 - pRedutor) Se pRedAliqCBS não for informado na DPS, então pAliqEfetCBS é a própria pCBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES DOS VALORES IBS -->
+	<xsd:complexType name="tcRTCTotalIBS">
+		<xsd:sequence>
+			<xsd:element name="vIBSTot" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor total do IBS. vIBSTot = vIBSUF + vIBSMun
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="gIBSCredPres" type="tcRTCTotalIBSCredPres" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de valores referentes ao crédito presumido para IBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="gIBSUFTot" type="tcRTCTotalIBSUF" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de valores referentes ao IBS Estadual
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="gIBSMunTot" type="tcRTCTotalIBSMun" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de valores referentes ao IBS Municipal
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES DOS VALORES CREDITO PRESUMIDO IBS -->
+	<xsd:complexType name="tcRTCTotalIBSCredPres">
+		<xsd:sequence>
+			<xsd:element name="pCredPresIBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota do crédito presumido para o IBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vCredPresIBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor do Crédito Presumido para o IBS vCredPresIBS = vBC x pCredPresIBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES DOS VALORES IBS ESTADUAL -->
+	<xsd:complexType name="tcRTCTotalIBSUF">
+		<xsd:sequence>
+			<xsd:element name="vDifUF" type="TSDec15V2" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Total do Diferimento do IBS estadual vDifUF = vIBSUF x pDifUF
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vIBSUF" type="TSDec15V2" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Total valor do IBS estadual vIBSUF = vBC x (pIBSUF ou pAliqEfetUF)
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES DOS VALORES IBS MUNICIPAL -->
+	<xsd:complexType name="tcRTCTotalIBSMun">
+		<xsd:sequence>
+			<xsd:element name="vDifMun" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Total do Diferimento do IBS municipal vDifMun = vIBSMun x pDifMun
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vIBSMun" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Total valor do IBS municipal vIBSMun = vBC x (pIBSMun ou pAliqEfetMun)
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES DOS VALORES CBS -->
+	<xsd:complexType name="tcRTCTotalCBS">
+		<xsd:sequence>
+			<xsd:element name="gCBSCredPres" type="tcRTCTotalCBSCredPres" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Grupo de valores referentes ao crédito presumido para CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vDifCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Total do Diferimento CBS vDifCBS = vCBS x pDifCBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Total valor da CBS da União vCBS = vBC x (pCBS ou pAliqEfetCBS)
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES DOS VALORES CREDITO PRESUMIDO CBS -->
+	<xsd:complexType name="tcRTCTotalCBSCredPres">
+		<xsd:sequence>
+			<xsd:element name="pCredPresCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota do crédito presumido para a CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vCredPresCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor do Crédito Presumido da CBS vCredPresCBS = vBC x pCredPresCBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES DOS VALORES TRIBUTAÇÃO REGULAR -->
+	<xsd:complexType name="tcRTCTotalTribRegular">
+		<xsd:sequence>
+			<xsd:element name="pAliqEfeRegIBSUF" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota efetiva de tributação regular do IBS estadual
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vTribRegIBSUF" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor da tributação regular do IBS estadual vTribRegIBSUF = vBC x pAliqEfeRegIBSUF
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pAliqEfeRegIBSMun" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota efetiva de tributação regular do IBS municipal
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vTribRegIBSMun" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor da tributação regular do IBS municipal vTribRegIBSMun = vBC x pAliqEfeRegIBSMun
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pAliqEfeRegCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota efetiva de tributação regular da CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vTribRegCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor da tributação regular da CBS vTribRegCBS = vBC x pAliqEfeRegCBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO DE TOTALIZADORES DOS VALORES IBSCBS EM COMPRAS GOVERNAMENTAIS -->
+	<xsd:complexType name="tcRTCTotalTribCompraGov">
+		<xsd:sequence>
+			<xsd:element name="pIBSUF" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota do IBS de competência do Estado
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vIBSUF" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor do Tributo do IBS da UF calculado
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pIBSMun" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota do IBS de competência do Município
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vIBSMun" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor do Tributo do IBS do Município calculado
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota da CBS
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="vCBS" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Valor do Tributo da CBS calculado
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--TIPO COMPLEXO IBS ESTADUAL -->
+	<xsd:complexType name="tcRTCValoresIBSCBSUF">
+		<xsd:sequence>
+			<xsd:element name="pIBSUF" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Alíquota da UF para IBS da localidade de incidência parametrizada no sistema
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pRedAliqUF" type="tsDecimal_05_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						Percentual de redução de alíquota estadual
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="pAliqEfetUF" type="tsDecimal_15_02" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						pAliqEfetUF = pIBSUF x (1 - pRedAliqUF) x (1 - pRedutor) Se pRedAliqUF não for informado na DPS, então pAliqEfetUF é a própria pIBSUF
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+    <!--FIM IBSCBS -->
 
 </xsd:schema>
