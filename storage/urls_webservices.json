@@ -12,6 +12,17 @@
     ],
     "soapns": "http://www.abrasf.org.br/nfse.xsd"
   },
+  "4115804": {
+    "municipio": "Medianeira",
+    "uf": "PR",
+    "homologacao": "",
+    "producao": "https://medianeira.iss.elotech.com.br/iss-ws/nfseService",
+    "version": "2.03",
+    "msgns": [
+      "xmlns='http://shad.elotech.com.br/schemas/iss/nfse_v2_03.xsd'"
+    ],
+    "soapns": "http://www.abrasf.org.br/nfse.xsd"
+  },
   "4200101": {
     "municipio": "Abelardo Luz",
     "uf": "SC",
