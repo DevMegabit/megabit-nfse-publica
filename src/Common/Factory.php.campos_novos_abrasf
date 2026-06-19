@@ -1,0 +1,792 @@
+<?php
+
+namespace NFePHP\NFSePublica\Common;
+
+/**
+ * Class for RPS XML convertion
+ *
+ * @category  NFePHP
+ * @package   NFePHP\NFSePublica
+ * @copyright NFePHP Copyright (c) 2020
+ * @license   http://www.gnu.org/licenses/lgpl.txt LGPLv3+
+ * @license   https://opensource.org/licenses/MIT MIT
+ * @license   http://www.gnu.org/licenses/gpl.txt GPLv3+
+ * @author    Roberto L. Machado <linux.rlm at gmail dot com>
+ * @link      http://github.com/nfephp-org/sped-nfse-publica for the canonical source repository
+ */
+
+use stdClass;
+use NFePHP\Common\DOMImproved as Dom;
+use DOMNode;
+use DOMElement;
+
+class Factory
+{
+
+    /**
+     * @var stdClass
+     */
+    protected $std;
+
+    /**
+     * @var Dom
+     */
+    protected $dom;
+
+    /**
+     * @var DOMNode
+     */
+    protected $rps;
+
+    /**
+     * @var \stdClass
+     */
+    protected $config;
+
+    /**
+     * Constructor
+     * @param stdClass $std
+     */
+    public function __construct(stdClass $std)
+    {
+        $this->std = $std;
+
+        $this->dom = new Dom('1.0', 'UTF-8');
+        $this->dom->preserveWhiteSpace = false;
+        $this->dom->formatOutput = false;
+        $this->rps = $this->dom->createElement('Rps');
+    }
+
+    /**
+     * Add config
+     * @param \stdClass $config
+     */
+    public function addConfig($config)
+    {
+        $this->config = $config;
+    }
+
+    /**
+     * Builder, converts sdtClass Rps in XML Rps
+     * NOTE: without Prestador Tag
+     * @return string RPS in XML string format
+     */
+    public function render()
+    {
+        $num = '';
+        if (!empty($this->std->identificacaorps->numero)) {
+            $num = $this->std->identificacaorps->numero;
+        }
+        $infRps = $this->dom->createElement('InfRps');
+        $att = $this->dom->createAttribute('id');
+        $att->value = "rps{$num}";
+        $infRps->appendChild($att);
+
+        $this->addIdentificacao($infRps);
+
+        $this->dom->addChild(
+            $infRps,
+            "DataEmissao",
+            $this->std->dataemissao,
+            true
+        );
+
+        $this->dom->addChild(
+            $infRps,
+            "NaturezaOperacao",
+            $this->std->naturezaoperacao,
+            true
+        );
+
+        $this->dom->addChild(
+            $infRps,
+            "OptanteSimplesNacional",
+            $this->std->optantesimplesnacional,
+            true
+        );
+
+        $this->dom->addChild(
+            $infRps,
+            "IncentivadorCultural",
+            $this->std->incentivadorcultural,
+            true
+        );
+
+        $this->dom->addChild(
+            $infRps,
+            "Status",
+            $this->std->status,
+            true
+        );
+
+        $this->addServico($infRps);
+        $this->addPrestador($infRps);
+        $this->addTomador($infRps);
+        // $this->addIntermediario($infRps);
+        // $this->addConstrucao($infRps);
+        $this->addIBSCBS($infRps);
+
+        /*
+        $this->dom->addChild(
+            $infRps,
+            "RegimeEspecialTributacao",
+            $this->std->regimeespecialtributacao,
+            true
+        );
+        */
+        $this->rps->appendChild($infRps);
+        $this->dom->appendChild($this->rps);
+        return str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $this->dom->saveXML());
+    }
+
+    /**
+     * Includes Identificacao TAG in parent NODE
+     * @param DOMNode $parent
+     */
+    protected function addIdentificacao(&$parent)
+    {
+        if (empty($this->std->identificacaorps)) {
+            return;
+        }
+        $id = $this->std->identificacaorps;
+        // $rps = $this->dom->createElement('Rps');
+        $node = $this->dom->createElement('IdentificacaoRps');
+        $this->dom->addChild(
+            $node,
+            "Numero",
+            $id->numero,
+            true
+        );
+        $this->dom->addChild(
+            $node,
+            "Serie",
+            $id->serie,
+            true
+        );
+        $this->dom->addChild(
+            $node,
+            "Tipo",
+            $id->tipo,
+            true
+        );
+        // $rps->appendChild($node);
+        $parent->appendChild($node);
+    }
+
+    /**
+     * Includes prestador
+     * @param DOMNode $parent
+     * @return void
+     */
+    protected function addPrestador(&$parent)
+    {
+        if (!isset($this->config)) {
+            return;
+        }
+        $node = $this->dom->createElement('Prestador');
+        // $cpfcnpj = $this->dom->createElement('CpfCnpj');
+        $this->dom->addChild(
+            $node,
+            "Cnpj",
+            !empty($this->config->cnpj) ? $this->config->cnpj : null,
+            false
+        );
+        // $this->dom->addChild(
+        //    $node,
+        //    "Cpf",
+        //    !empty($this->config->cpf) ? $this->config->cpf : null,
+        //    false
+        // );
+        // $node->appendChild($cpfcnpj);
+        $this->dom->addChild(
+            $node,
+            "InscricaoMunicipal",
+            $this->config->im,
+            true
+        );
+        $parent->appendChild($node);
+    }
+
+    /**
+     * Includes Servico TAG in parent NODE
+     * @param DOMNode $parent
+     */
+    protected function addServico(&$parent)
+    {
+        $serv = $this->std->servico;
+        $val = $this->std->servico->valores;
+        $node = $this->dom->createElement('Servico');
+        $valnode = $this->dom->createElement('Valores');
+        $this->dom->addChild(
+            $valnode,
+            "ValorServicos",
+            number_format($val->valorservicos, 2, '.', ''),
+            true
+        );
+        $this->dom->addChild(
+            $valnode,
+            "ValorDeducoes",
+            isset($val->valordeducoes) ? number_format($val->valordeducoes, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "ValorPis",
+            isset($val->valorpis) ? number_format($val->valorpis, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "ValorCofins",
+            isset($val->valorcofins) ? number_format($val->valorcofins, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "ValorInss",
+            isset($val->valorinss) ? number_format($val->valorinss, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "ValorIr",
+            isset($val->valorir) ? number_format($val->valorir, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "ValorCsll",
+            isset($val->valorcsll) ? number_format($val->valorcsll, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "IssRetido",
+            $serv->issretido,
+            true
+        );
+        $this->dom->addChild(
+            $valnode,
+            "ValorIss",
+            isset($val->valoriss) ? number_format($val->valoriss, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "OutrasRetencoes",
+            isset($val->outrasretencoes) ? number_format($val->outrasretencoes, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "Aliquota",
+            isset($val->aliquota) ? $val->aliquota : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "DescontoIncondicionado",
+            isset($val->descontoincondicionado) ? number_format($val->descontoincondicionado, 2, '.', '') : null,
+            false
+        );
+        $this->dom->addChild(
+            $valnode,
+            "DescontoCondicionado",
+            isset($val->descontocondicionado) ? number_format($val->descontocondicionado, 2, '.', '') : null,
+            false
+        );
+
+        $node->appendChild($valnode);
+        $this->dom->addChild(
+            $node,
+            "ResponsavelRetencao",
+            isset($serv->responsavelretencao) ? $serv->responsavelretencao : null,
+            false
+        );
+
+        /*
+        $this->dom->addChild(
+            $node,
+            "CodigoCnae",
+            isset($serv->codigocnae) ? $serv->codigocnae : null,
+            false
+        );
+        */
+
+        if (isset($serv->codigotributacaomunicipio))
+            $this->dom->addChild(
+                $node,
+                "CodigoTributacaoMunicipio",
+                isset($serv->codigotributacaomunicipio) ? $serv->codigotributacaomunicipio : null,
+                true
+            );
+
+
+        $this->dom->addChild(
+            $node,
+            "Discriminacao",
+            $serv->discriminacao,
+            false
+        );
+
+        $this->dom->addChild(
+            $node,
+            "CodigoMunicipio",
+            $serv->codigomunicipio,
+            true
+        );
+
+        $this->dom->addChild(
+            $node,
+            "CodigoNbs",
+            $serv->cnbs,
+            true
+        );
+
+
+        if (isset($serv->codigomunicipio))
+            $this->dom->addChild(
+                $node,
+                "CodigoMunicipio",
+                $serv->codigomunicipio,
+                true
+            );
+
+        if (isset($serv->codigopais))
+            $this->dom->addChild(
+                $node,
+                "CodigoPais",
+                isset($serv->codigopais) ? $serv->codigopais : null,
+                false
+            );
+
+        if (isset($serv->exigibilidadeiss))
+            $this->dom->addChild(
+                $node,
+                "ExigibilidadeISS",
+                $serv->exigibilidadeiss,
+                true
+            );
+
+        if (isset($serv->municipioincidencia))
+            $this->dom->addChild(
+                $node,
+                "MunicipioIncidencia",
+                isset($serv->municipioincidencia) ? $serv->municipioincidencia : null,
+                false
+            );
+
+        if (isset($serv->numeroprocesso))
+            $this->dom->addChild(
+                $node,
+                "NumeroProcesso",
+                isset($serv->numeroprocesso) ? $serv->numeroprocesso : null,
+                false
+            );
+
+        if (isset($serv->itemlistaservico))
+            $this->dom->addChild(
+                $node,
+                "ItemListaServico",
+                isset($serv->itemlistaservico) ? $serv->itemlistaservico : null,
+                false
+            );
+
+        if (isset($serv->listaitemservico))
+            $this->addItemServico($node);
+
+        $parent->appendChild($node);
+    }
+
+    protected function addItemServico(&$parent)
+    {
+        if (!isset($this->std->servico->listaitensservico))
+            return;
+
+        $itens = $this->std->servico->listaitensservico;
+        $node = $this->dom->createElement('ListaItemServico');
+
+        foreach ($itens as $item) {
+            $nodeItem = $this->dom->createElement('ItemServico');
+            $this->dom->addChild(
+                $nodeItem,
+                "ItemListaServico",
+                $item->itemlistaservico,
+                true
+            );
+
+            $this->dom->addChild(
+                $nodeItem,
+                "CodigoCnae",
+                isset($item->codigocnae) ? $item->codigocnae : null,
+                false
+            );
+
+            $this->dom->addChild(
+                $nodeItem,
+                "Tributavel",
+                isset($item->tributavel) ? $item->tributavel : null,
+                false
+            );
+
+            $this->dom->addChild(
+                $nodeItem,
+                "Descricao",
+                $item->descricao,
+                false
+            );
+
+            $this->dom->addChild(
+                $nodeItem,
+                "Unidade",
+                $item->unidade,
+                false
+            );
+
+            $this->dom->addChild(
+                $nodeItem,
+                "Quantidade",
+                number_format($item->quantidade, 2, '.', ''),
+                false
+            );
+
+            $this->dom->addChild(
+                $nodeItem,
+                "ValorUnitario",
+                number_format($item->valorunitario, 2, '.', ''),
+                false
+            );
+
+            $this->dom->addChild(
+                $nodeItem,
+                "ValorDesconto",
+                number_format($item->valordesconto, 2, '.', ''),
+                false
+            );
+
+            $this->dom->addChild(
+                $nodeItem,
+                "ValorLiquido",
+                number_format($item->valorliquido, 2, '.', ''),
+                false
+            );
+
+            // Verificar no futuro a necessidade
+            // $this->dom->addChild(
+            //     $node,
+            //     "DadosDeducao",
+            //     null,
+            //     false
+            // );
+
+            $node->appendChild($nodeItem);
+        }
+        $parent->appendChild($node);
+    }
+
+    /**
+     * Includes Tomador TAG in parent NODE
+     * @param DOMNode $parent
+     */
+    protected function addTomador(&$parent)
+    {
+        if (!isset($this->std->tomador)) {
+            return;
+        }
+        $tom = $this->std->tomador;
+
+
+        $node = $this->dom->createElement('Tomador');
+        $ide = $this->dom->createElement('IdentificacaoTomador');
+        $cpfcnpj = $this->dom->createElement('CpfCnpj');
+        if (isset($tom->cnpj)) {
+            $this->dom->addChild(
+                $cpfcnpj,
+                "Cnpj",
+                $tom->cnpj,
+                true
+            );
+        } else {
+            $this->dom->addChild(
+                $cpfcnpj,
+                "Cpf",
+                $tom->cpf,
+                true
+            );
+        }
+        $ide->appendChild($cpfcnpj);
+        $this->dom->addChild(
+            $ide,
+            "InscricaoMunicipal",
+            isset($tom->inscricaomunicipal) ? $tom->inscricaomunicipal : null,
+            false
+        );
+        $node->appendChild($ide);
+        $this->dom->addChild(
+            $node,
+            "RazaoSocial",
+            $tom->razaosocial,
+            true
+        );
+        if (!empty($this->std->tomador->endereco)) {
+            $end = $this->std->tomador->endereco;
+            $endereco = $this->dom->createElement('Endereco');
+            $this->dom->addChild(
+                $endereco,
+                "Endereco",
+                $end->endereco,
+                true
+            );
+            $this->dom->addChild(
+                $endereco,
+                "Numero",
+                $end->numero,
+                true
+            );
+            $this->dom->addChild(
+                $endereco,
+                "Complemento",
+                isset($end->complemento) ? $end->complemento : null,
+                false
+            );
+            $this->dom->addChild(
+                $endereco,
+                "Bairro",
+                $end->bairro,
+                true
+            );
+            $this->dom->addChild(
+                $endereco,
+                "CodigoMunicipio",
+                $end->codigomunicipio,
+                true
+            );
+            $this->dom->addChild(
+                $endereco,
+                "Uf",
+                $end->uf,
+                true
+            );
+            $this->dom->addChild(
+                $endereco,
+                "CodigoPais",
+                isset($end->codigopais) ? $end->codigopais : null,
+                false
+            );
+            $this->dom->addChild(
+                $endereco,
+                "Cep",
+                $end->cep,
+                true
+            );
+            $node->appendChild($endereco);
+        }
+        if (!empty($tom->telefone) || !empty($tom->email)) {
+            $contato = $this->dom->createElement('Contato');
+            $this->dom->addChild(
+                $contato,
+                "Telefone",
+                isset($tom->telefone) ? $tom->telefone : null,
+                false
+            );
+            $this->dom->addChild(
+                $contato,
+                "Email",
+                isset($tom->email) ? $tom->email : null,
+                false
+            );
+            $node->appendChild($contato);
+        }
+        $parent->appendChild($node);
+    }
+
+    /**
+     * Includes Intermediario TAG in parent NODE
+     * @param DOMNode $parent
+     */
+    protected function addIntermediario(&$parent)
+    {
+        if (!isset($this->std->intermediarioservico)) {
+            return;
+        }
+        $int = $this->std->intermediarioservico;
+        $node = $this->dom->createElement('Intermediario');
+        $ide = $this->dom->createElement('IdentificacaoIntermediario');
+        $cpfcnpj = $this->dom->createElement('CpfCnpj');
+        if (isset($int->cnpj)) {
+            $this->dom->addChild(
+                $cpfcnpj,
+                "Cnpj",
+                $int->cnpj,
+                true
+            );
+        } else {
+            $this->dom->addChild(
+                $cpfcnpj,
+                "Cpf",
+                $int->cpf,
+                true
+            );
+        }
+        $ide->appendChild($cpfcnpj);
+        $this->dom->addChild(
+            $ide,
+            "InscricaoMunicipal",
+            $int->inscricaomunicipal,
+            false
+        );
+        $node->appendChild($ide);
+        $this->dom->addChild(
+            $node,
+            "RazaoSocial",
+            $int->razaosocial,
+            true
+        );
+
+        $parent->appendChild($node);
+    }
+
+    /**
+     * Includes Construcao TAG in parent NODE
+     * @param DOMNode $parent
+     */
+    protected function addConstrucao(&$parent)
+    {
+        if (!isset($this->std->construcaocivil)) {
+            return;
+        }
+        $obra = $this->std->construcaocivil;
+        $node = $this->dom->createElement('ConstrucaoCivil');
+        $this->dom->addChild(
+            $node,
+            "CodigoObra",
+            isset($obra->codigoobra) ? $obra->codigoobra : null,
+            false
+        );
+        $this->dom->addChild(
+            $node,
+            "Art",
+            $obra->art,
+            true
+        );
+        $parent->appendChild($node);
+    }
+
+    /**
+     * Includes IBSCBS TAG in parent NODE
+     * @param DOMNode $parent
+     */
+    protected function addIBSCBS(&$parent)
+    {
+        if (!isset($this->std->ibscbs)) {
+            return;
+        }
+        $ibscbs = $this->std->ibscbs;
+        $node = $this->dom->createElement('IBSCBS');
+
+        $this->dom->addChild(
+            $node,
+            "finNFSe",
+            $ibscbs->finnfse,
+            true
+        );
+
+        $this->dom->addChild(
+            $node,
+            "indFinal",
+            $ibscbs->indfinal,
+            true
+        );
+
+        $this->dom->addChild(
+            $node,
+            "cIndOp",
+            $ibscbs->cindop,
+            true
+        );
+
+        $this->dom->addChild(
+            $node,
+            "indDest",
+            $ibscbs->inddest,
+            true
+        );
+
+        $valoresNode = $this->dom->createElement('valores');
+        $tribNode = $this->dom->createElement('trib');
+        $gIBSCBSNode = $this->dom->createElement('gIBSCBS');
+
+        $gIBSCBS = $ibscbs->valores->trib->gibscbs;
+        $this->dom->addChild(
+            $gIBSCBSNode,
+            'CST',
+            $gIBSCBS->cst,
+            true
+        );
+
+        $this->dom->addChild(
+            $gIBSCBSNode,
+            'cClassTrib',
+            $gIBSCBS->cclasstrib,
+            true
+        );
+
+        if (isset($trib->ccredpres))
+            $this->dom->addChild(
+                $gIBSCBSNode,
+                'cCredPres',
+                $gIBSCBS->cCredPres,
+                false
+            );
+
+
+        if (isset($gIBSCBS->gtribregular)) {
+            $gTribRegNode = $this->dom->createElement('gTribRegular');
+
+            $this->dom->addChild(
+                $gTribRegNode,
+                'CSTReg',
+                $gIBSCBS->gtribregular->cstreg,
+                true
+            );
+            $this->dom->addChild(
+                $gTribRegNode,
+                'cClassTribReg',
+                $gIBSCBS->gtribregular->cclasstribreg,
+                true
+            );
+
+            $gIBSCBSNode->appendChild($gTribRegNode);
+        }
+
+        if (isset($gIBSCBS->gdif)) {
+            $gDifNode = $this->dom->createElement('gDif');
+            $this->dom->addChild(
+                $gDifNode,
+                'pDifUF',
+                $gIBSCBS->gdif->pdifuF,
+                false
+            );
+            $this->dom->addChild(
+                $gDifNode,
+                'pDifMun',
+                $gIBSCBS->gdif->pdifmun,
+                false
+            );
+            $this->dom->addChild(
+                $gDifNode,
+                'pDifCBS',
+                $gIBSCBS->gdif->pdifcbs,
+                false
+            );
+
+            $gIBSCBSNode->appendChild($gDifNode);
+        }
+
+        $tribNode->appendChild($gIBSCBSNode);
+        $valoresNode->appendChild($tribNode);
+        $node->appendChild($valoresNode);
+
+        $parent->appendChild($node);
+    }
+}
