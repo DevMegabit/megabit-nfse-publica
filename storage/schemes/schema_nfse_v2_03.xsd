@@ -631,8 +631,9 @@
 						 minOccurs="1" maxOccurs="1" />
 			<xsd:element name="Uf" type="tsUf" minOccurs="1"
 						 maxOccurs="1" />
+			<!-- Elotech: no XSD oficial é 1-1, mas o webservice rejeita (E292) o país quando não é exportação (ExigibilidadeISS != 4) e o modelo oficial envia sem a tag -->
 			<xsd:element name="CodigoPais" type="tsCodigoPaisBacen"
-						 minOccurs="1" maxOccurs="1" />
+						 minOccurs="0" maxOccurs="1" />
 			<xsd:element name="Cep" type="tsCep" minOccurs="1"
 						 maxOccurs="1" />
 			<xsd:element name="EnderecoExt" type="tcEnderecoExt" minOccurs="0"
@@ -809,6 +810,8 @@
 						 minOccurs="0" maxOccurs="1" />
 			<xsd:element name="CSTPisCofins" type="tsCstPisCofins"
 						 minOccurs="0" maxOccurs="1" />
+			<xsd:element name="ValorBaseCalculoPisCofins" type="tsValor"
+						 minOccurs="0" maxOccurs="1" />
 		</xsd:sequence>
 	</xsd:complexType>
 
@@ -972,6 +975,8 @@
 						 minOccurs="0" maxOccurs="1" />
 			<xsd:element name="IncentivoFiscal" type="tsSimNao"
 						 minOccurs="1" maxOccurs="1" />
+			<xsd:element name="DecisaoAdministrativaJudicial" type="tsSimNao"
+						 minOccurs="0" maxOccurs="1" />
 			<xsd:element name="InfIbsCbs" type="tcInfIbsCbs"
 						 minOccurs="0" maxOccurs="1" />
 		</xsd:sequence>
@@ -1621,6 +1626,7 @@
 			<xsd:element name="tpOper" type="tsTpOper" minOccurs="0" maxOccurs="1"/>
 			<xsd:element name="tpEnteGov" type="tsTpEnteGov" minOccurs="0" maxOccurs="1"/>
 			<xsd:element name="indDest" type="tsIndDest" minOccurs="0" maxOccurs="1"/>
+			<xsd:element name="opNaoOnerosa" type="tsSimNao" minOccurs="0" maxOccurs="1"/>
 			<xsd:element name="gRefNFSe" type="tcRefNfse" minOccurs="0" maxOccurs="1"/>
 			<xsd:element name="dest" type="tcDest" minOccurs="0" maxOccurs="1"/>
 			<xsd:element name="imovel" type="tcImovel" minOccurs="0" maxOccurs="1"/>
