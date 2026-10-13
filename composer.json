@@ -1,5 +1,5 @@
 {
-  "name": "nfephp-org/sped-nfse-publica",
+  "name": "devmegabit/megabit-nfse-publica",
   "type": "library",
   "description": "Biblioteca para integração NFSe Modelo Publica.",
   "keywords": [
